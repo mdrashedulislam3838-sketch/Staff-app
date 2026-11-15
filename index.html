@@ -1,0 +1,536 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>স্টাফ মুভমেন্ট মনিটরিং - SED সেক্টর</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;font-family:"Noto Sans Bengali","Kalpurush",Nirmala UI,system-ui,sans-serif;background:linear-gradient(180deg,#f2f5fb,#fbfcfe);color:#1f2937;font-size:15px;min-height:100vh}
+header{background:linear-gradient(135deg,#137a6b,#2e9e87);color:#fff;padding:14px 16px;display:flex;justify-content:space-between;align-items:center;gap:8px;border-radius:0 0 26px 26px;box-shadow:0 6px 18px #137a6b33}
+header h1{font-size:17px;margin:0}header small{opacity:.9;display:block;font-size:12px}
+main{max-width:900px;margin:0 auto;padding:14px}
+.card{position:relative;overflow:hidden;background:#fff;border-radius:22px;padding:16px;margin-bottom:14px;border:1px solid #e3e8f0;box-shadow:0 6px 18px #1f293712}
+label{display:block;font-size:13px;margin:10px 0 4px;color:#4b5563}
+input:focus,select:focus,textarea:focus{outline:2px solid #3f5fc455;border-color:#3f5fc4}
+input,select,textarea{width:100%;padding:11px 12px;border:1px solid #d5dce8;border-radius:13px;font:inherit;background:#fff}
+button{background:linear-gradient(135deg,#3f5fc4,#2a3f94);color:#fff;border:0;padding:11px 16px;border-radius:13px;font:inherit;cursor:pointer}
+button.sec{background:#e9edf5;color:#1f2937}button.red{background:#c62828}button.sm{padding:6px 11px;font-size:13px}
+.back{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+.row{display:flex;gap:8px;flex-wrap:wrap}.row>*{flex:1;min-width:130px}
+.item{display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid #eef1f6;gap:8px}
+.badge{padding:3px 10px;border-radius:12px;font-size:12px;color:#fff}
+.p{background:#ef8f00}.d{background:#2f7d32}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th,td{border:1px solid #d1d5db;padding:6px;text-align:left;vertical-align:top}th{background:#eceffa}
+.ck{display:flex;flex-wrap:wrap;gap:6px}.ck label{display:flex;align-items:center;gap:5px;margin:0;padding:7px 12px;border:1px solid #d5dce8;border-radius:16px;color:#111;background:#fff}.ck input{width:auto;padding:0}
+.scroll{overflow-x:auto}.hide{display:none}.muted{color:#6b7280;font-size:13px}
+.stats{display:flex;gap:8px}.stats div{flex:1;text-align:center;background:#eceffa;border-radius:14px;padding:10px}
+.stats b{font-size:20px;display:block}
+.grp{position:relative;overflow:hidden;border-radius:30px;padding:18px;margin-bottom:16px;border:1px solid var(--bd);background:linear-gradient(160deg,var(--bg1),#fff 75%)}
+.teal{--c1:#2e9e87;--c2:#137a6b;--bg1:#eaf5f2;--bd:#cde3de}
+.green{--c1:#66bb6a;--c2:#2f7d32;--bg1:#edf6ec;--bd:#d0e4cf}
+.orange{--c1:#d98a3a;--c2:#b45309;--bg1:#fcf0e7;--bd:#f0d8c6}
+.blue{--c1:#3b93cc;--c2:#1d6fa5;--bg1:#e9f3fa;--bd:#cde0ee}
+.indigo{--c1:#6677d0;--c2:#3a4c9f;--bg1:#eceffa;--bd:#d3d8ee}
+.gh{display:flex;align-items:center;gap:12px;position:relative;z-index:1}
+.gh h3{margin:0;font-size:18px}.gh small{color:#6b7280;font-size:13px;display:block;margin-top:2px}
+.ib{flex:none;width:54px;height:54px;border-radius:18px;background:linear-gradient(135deg,var(--c1),var(--c2));display:grid;place-items:center;font-size:25px;box-shadow:0 6px 12px #0002}
+.cnt{margin-left:auto;flex:none;width:32px;height:32px;border-radius:50%;display:grid;place-items:center;font-weight:700;font-size:14px;background:var(--bg1);border:1px solid var(--bd);color:var(--c2)}
+.grp hr{border:0;border-top:1px solid var(--bd);margin:14px 0}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;position:relative;z-index:1}
+.tile{position:relative;overflow:hidden;background:#fff;border-radius:22px;border:1px solid var(--bd);padding:14px;min-height:128px;display:flex;flex-direction:column;justify-content:space-between;gap:14px;box-shadow:0 8px 18px #1f293712;cursor:pointer}
+.tile:active{transform:scale(.98)}
+.tile::after{content:"";position:absolute;top:-34px;right:-34px;width:120px;height:120px;border-radius:50%;background:var(--bg1)}
+.ti{position:relative;z-index:1;width:48px;height:48px;border-radius:16px;background:linear-gradient(135deg,var(--c1),var(--c2));display:grid;place-items:center;font-size:22px;box-shadow:0 5px 10px #0002}
+.tile b{position:relative;z-index:1;font-size:15px}
+.ring{position:absolute;right:-26px;bottom:-26px;width:140px;height:140px;opacity:.16;color:var(--c2,#137a6b);animation:spin 22s linear infinite;pointer-events:none;z-index:0}
+.ring span{position:absolute;left:50%;top:50%;font-weight:900;font-size:28px;line-height:1;transform:translate(-50%,-50%) rotate(calc(var(--i)*45deg)) translateY(-52px)}
+@keyframes spin{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){.ring{animation:none}}
+@media print{.hero,.noprint,.back,.ring{display:none!important}body{background:#fff}.card{box-shadow:none}}
+
+.hero{position:relative;overflow:hidden;color:#fff;background:linear-gradient(135deg,#2a3f94 0%,#2a5ab0 55%,#1b90d8 100%);border-radius:0 0 40px 40px;padding:calc(env(safe-area-inset-top,0px) + 16px) 18px 22px;box-shadow:0 10px 24px #2a3f9440}
+.hero::before{content:"";position:absolute;top:-60px;right:-50px;width:190px;height:190px;border-radius:50%;background:#ffffff1a}
+.hero::after{content:"";position:absolute;bottom:-70px;left:-40px;width:150px;height:150px;border-radius:50%;background:#ffffff14}
+.hero.sm{padding-bottom:16px;border-radius:0 0 30px 30px}
+.hero .ring{color:#fff;opacity:.2;right:-20px;bottom:-30px;z-index:0}
+.ht{display:flex;justify-content:space-between;align-items:center;gap:10px;position:relative;z-index:1}
+.ico{width:46px;height:46px;border-radius:16px;background:#ffffff33;color:#fff;border:0;padding:0;font-size:22px;display:grid;place-items:center}
+.pt{font-size:18px;flex:1;text-align:center}
+.chip{display:inline-flex;align-items:center;gap:6px;padding:7px 13px;border-radius:999px;border:1.5px solid #ffffff59;background:#ffffff1f;font-size:13px}
+.chip.ok{background:#fff;color:#1f6f3a;border-color:#bfe3c9;font-weight:700}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.hm{display:flex;align-items:center;gap:14px;margin-top:18px;position:relative;z-index:1}
+.hm small{opacity:.85;font-size:14px;display:block}
+.hm h2{margin:2px 0 8px;font-size:26px;line-height:1.15;word-break:break-word}
+.av{flex:none;width:76px;height:76px;border-radius:50%;border:4px solid #ffffff55;background:#ffffff26;display:grid;place-items:center;font-size:26px;font-weight:800}
+.pc{display:flex;align-items:center;gap:12px;margin-top:18px;padding:14px 16px;border-radius:22px;border:1.5px solid #ffffff55;background:#ffffff26;position:relative;z-index:1}
+.pc small{opacity:.85;font-size:12px;display:block}.pc b{font-size:16px}
+.sh{display:flex;gap:12px;margin:22px 6px 14px}
+.sh i{width:5px;border-radius:4px;background:linear-gradient(#2a5ab0,#1b90d8)}
+.sh h2{margin:0;font-size:22px}.sh p{margin:4px 0 0;color:#6b7280;font-size:14px}
+.tile{border-radius:28px;min-height:140px}
+.grp{border-radius:36px}
+
+#splash{position:fixed;inset:0;z-index:9999;overflow:hidden;color:#fff;background:linear-gradient(160deg,#223880 0%,#2a479e 38%,#2a6fbf 72%,#2e97dc 100%);transition:opacity .5s}
+#splash::before{content:"";position:absolute;inset:0;background:linear-gradient(115deg,transparent 28%,#ffffff17 42%,transparent 58%)}
+.dot{position:absolute;width:8px;height:8px;border-radius:50%;background:#fff;opacity:.25}
+#splash .sr{position:absolute;width:0;height:0;animation:spin 60s linear infinite}
+#splash .sr span{position:absolute;left:0;top:0;font-weight:900;line-height:1;transform:translate(-50%,-50%) rotate(calc(var(--i)*36deg)) translateY(calc(var(--r)*-1))}
+.sr.big{color:#fff}
+.sr.a{left:82vw;top:28vh;--r:26vw;opacity:.17}
+.sr.a span{font-size:13vw;text-shadow:5px 5px 0 #ffffff55,10px 10px 0 #ffffff30}
+.sr.b{left:18vw;top:70vh;--r:20vw;opacity:.13;animation-direction:reverse;animation-duration:70s}
+.sr.b span{font-size:11vw;text-shadow:4px 4px 0 #ffffff55,8px 8px 0 #ffffff30}
+.lg{position:absolute;left:50%;top:47%;width:104px;height:104px;margin:-52px 0 0 -52px;border-radius:50%;background:#fff;box-shadow:0 0 0 10px #ffffff30,0 0 0 22px #ffffff14;animation:pulse 2.4s ease-in-out infinite}
+@keyframes pulse{50%{box-shadow:0 0 0 15px #ffffff3a,0 0 0 32px #ffffff0f}}
+.lg .sr{left:50%;top:50%;--r:30px;color:#2a479e;animation-duration:14s}
+.lg .sr span{font-size:15px}
+.stt{position:absolute;left:0;right:0;top:60%;text-align:center}
+.stt h1{margin:0;font-size:30px;font-family:system-ui,Arial,sans-serif}
+.stt p{margin:8px 0 0;font-size:15px;opacity:.9}
+.spb{position:absolute;left:16px;right:16px;bottom:calc(env(safe-area-inset-bottom,0px) + 26px)}
+.spr{display:flex;justify-content:space-between;font-size:13px;margin-bottom:8px}
+.trk{height:8px;border-radius:6px;background:#ffffff33;overflow:hidden}
+#sbar{height:100%;width:0;border-radius:6px;background:linear-gradient(90deg,#1ea1e8,#fff)}
+@media (prefers-reduced-motion:reduce){#splash .sr,.lg{animation:none}}
+@media print{#splash{display:none}}
+
+.rt{display:flex;align-items:center;gap:8px}
+.lang{display:flex;background:#ffffff33;border-radius:999px;padding:3px}
+.lang button{background:transparent;color:#fff;padding:7px 14px;border-radius:999px;font-weight:700;font-size:13px;border:0}
+.lang button.on{background:#fff;color:#2a3f94}
+.pt{font-size:16px}
+</style>
+</head>
+<body>
+<div id="splash">
+<i class="dot" style="left:9%;top:22%"></i><i class="dot" style="left:28%;top:21%;opacity:.4"></i><i class="dot" style="left:46%;top:25%;width:7px;height:7px"></i><i class="dot" style="left:7%;top:30%;width:10px;height:10px"></i><i class="dot" style="left:68%;top:36%"></i>
+<div class="sr big a"><span style="--i:0">F</span><span style="--i:1">F</span><span style="--i:2">F</span><span style="--i:3">F</span><span style="--i:4">F</span><span style="--i:5">F</span><span style="--i:6">F</span><span style="--i:7">F</span><span style="--i:8">F</span><span style="--i:9">F</span></div>
+<div class="sr big b"><span style="--i:0">F</span><span style="--i:1">F</span><span style="--i:2">F</span><span style="--i:3">F</span><span style="--i:4">F</span><span style="--i:5">F</span><span style="--i:6">F</span><span style="--i:7">F</span><span style="--i:8">F</span><span style="--i:9">F</span></div>
+<div class="lg"><div class="sr in"><span style="--i:0">F</span><span style="--i:1">F</span><span style="--i:2">F</span><span style="--i:3">F</span><span style="--i:4">F</span><span style="--i:5">F</span><span style="--i:6">F</span><span style="--i:7">F</span><span style="--i:8">F</span><span style="--i:9">F</span></div></div>
+<div class="stt"><h1>Friendship</h1><p>আপনার কাজের জায়গা তৈরি হচ্ছে</p></div>
+<div class="spb"><div class="spr"><span id="sst">অ্যাপ চালু হচ্ছে...</span><b id="spc">0%</b></div><div class="trk"><div id="sbar"></div></div></div>
+</div>
+<div id="top"></div>
+<main id="app"></main>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script>
+/* ===== Firebase কনফিগ: Firebase Console থেকে কপি করে এখানে বসান ===== */
+const FB_CONFIG={apiKey:"YOUR_API_KEY",authDomain:"",projectId:"",storageBucket:"",messagingSenderId:"",appId:""};
+/* ============================================================== */
+const useFB=typeof firebase!=="undefined"&&!!FB_CONFIG.apiKey&&!FB_CONFIG.apiKey.startsWith("YOUR");
+let db=null;
+let READY=!useFB;
+if(useFB){firebase.initializeApp(FB_CONFIG);db=firebase.firestore();db.enablePersistence({synchronizeTabs:true}).catch(()=>{});}
+const EN={
+"এডমিন":"Admin","এড":"AD","স্টাফ":"Staff","লগইন":"Login","ভূমিকা":"Role","এডমিন / ম্যানেজার":"Admin / Manager",
+"পাসওয়ার্ড":"Password","প্রবেশ":"Enter","আপনার নাম":"Your name","পিন":"PIN","-- সিলেক্ট --":"-- Select --",
+"আপ টু ডেট":"Up to date","লোকাল ডাটা":"Local data","অফলাইন (নেট এলে জমা হবে)":"Offline (will sync when online)",
+"ডাটা অনলাইনে সবার সাথে শেয়ার হচ্ছে। এডমিনের ডিফল্ট পাসওয়ার্ড: admin123 (সেটিংসে বদলান)":"Data is shared online with everyone. Admin default password: admin123 (change it in Settings)",
+"Firebase সেট করা হয়নি, তাই ডাটা শুধু এই ডিভাইসে সেভ হচ্ছে। এডমিনের ডিফল্ট পাসওয়ার্ড: admin123":"Firebase is not set up, so data is saved on this device only. Admin default password: admin123",
+"অ্যাপ চালু হচ্ছে":"Starting the app","আগে সেভ করা তথ্য খোলা হচ্ছে":"Opening previously saved data","প্রায় শেষ":"Almost done","প্রস্তুত":"Ready",
+"আপনার কাজের জায়গা তৈরি হচ্ছে":"Setting up your workspace",
+"স্টাফ মুভমেন্ট মনিটরিং":"Staff Movement Monitoring","এগ্রিকালচার · SED সেক্টর":"Agriculture · SED Sector",
+"শুভ সকাল":"Good morning","শুভ দুপুর":"Good afternoon","শুভ বিকাল":"Good afternoon","শুভ সন্ধ্যা":"Good evening","শুভ রাত্রি":"Good night",
+"আজকের মুভমেন্ট":"Today's movements","মোট":"Total","পরিকল্পিত":"Planned","বাস্তবায়িত":"Implemented",
+"ব্যবস্থাপনা ও মনিটরিং":"Management & Monitoring","মাঠের তথ্য এন্ট্রি":"Field Data Entry","আজ যে কাজ করবেন, সেটি বেছে নিন":"Choose the task you will do today",
+"মুভমেন্ট ও রিপোর্ট":"Movement & Reports","পরিকল্পনা, বাস্তবায়ন ও রিপোর্ট":"Plan, implementation & reports",
+"বেনিফিশিয়ারি ও ইনপুট":"Beneficiaries & Inputs","বেনিফিশিয়ারি তালিকা ও ইনপুট সাপোর্ট":"Beneficiary list & input support",
+"এরিয়া ও প্রজেক্ট":"Areas & Projects","কাজের এলাকা ও প্রজেক্টের নাম":"Work areas and project names",
+"চর, গ্রুপ ও SED হাব":"Chars, Groups & SED Hubs","চর, গ্রুপ ও হাবের তালিকা":"List of chars, groups and hubs",
+"স্টাফ ও সেটিংস":"Staff & Settings","স্টাফ, পিন ও ব্যাকআপ":"Staff, PIN & backup",
+"আমার মুভমেন্ট":"My Movements","পরিকল্পনা ও বাস্তবায়ন":"Planning & implementation","বেনিফিশিয়ারি ও ইনপুট সাপোর্ট":"Beneficiaries & input support",
+"মুভমেন্ট":"Movement","রিপোর্ট":"Report","বেনিফিশিয়ারি":"Beneficiaries","ইনপুট সাপোর্ট":"Input Support","এরিয়া":"Area","প্রজেক্ট":"Project",
+"গ্রুপ":"Group","চর":"Char","সেটিংস":"Settings","নতুন পরিকল্পনা":"New Plan","আমার কাজ":"My Tasks","SED হাব":"SED Hub","হাব":"Hub",
+"সকালের পরিকল্পনা":"Morning Plan","তারিখ":"Date",
+"এরিয়া সিলেক্ট করুন (একাধিক)":"Select area(s) (multiple allowed)","প্রজেক্ট সিলেক্ট করুন (একাধিক)":"Select project(s) (multiple allowed)",
+"চর সিলেক্ট করুন (একাধিক)":"Select char(s) (multiple allowed)","গ্রুপ সিলেক্ট করুন (একাধিক)":"Select group(s) (multiple allowed)",
+"কাজের ধরন":"Activity type","বেনিফিশিয়ারি (ভিজিট)":"Beneficiaries (visit)",
+"ফলোআপ (ইনপুট সাপোর্ট পাওয়া বেনিফিশিয়ারি)":"Follow-up (beneficiaries who received input support)",
+"এডমিন এখনো যোগ করেনি":"Not added by admin yet","এডমিন এখনো যোগ করেনি (এই চরের জন্য)":"Not added by admin yet (for this char)",
+"এই গ্রুপে কোনো বেনিফিশিয়ারি যোগ করা হয়নি":"No beneficiary has been added to this group",
+"এই গ্রুপে কেউ ইনপুট সাপোর্ট পায়নি":"No one in this group has received input support",
+"পরিকল্পনার নোট (ঐচ্ছিক)":"Plan note (optional)","পরিকল্পনা সেভ করুন":"Save plan","গ্রুপ ছাড়া":"No group","চর ছাড়া":"No char",
+"গ্রুপ ছাড়া (যেমন SED হাব ভিজিট)":"No group (e.g. SED Hub Visit)","চর নেই":"No char",
+"ট্রেনিং":"Training","মিটিং":"Meeting","লেসন লার্নিং":"Lesson Learning","বেনিফিশিয়ারি ভিজিট":"Beneficiary Visit","ফলোআপ":"Follow-up","SED হাব ভিজিট":"SED Hub Visit",
+"বাস্তবায়ন করুন":"Implement","বাস্তবায়ন":"Implement","মুছুন":"Delete","কোনো কাজ নেই":"No tasks","সম্পন্ন কাজ":"Completed work",
+"নাম লিখুন":"Enter name","-- কোন চরের --":"-- Which char --","যোগ":"Add","কিছু যোগ করা হয়নি":"Nothing added yet","নির্ধারিত নেই":"Not assigned",
+"স্টাফ যোগ করুন":"Add Staff","স্টাফের নাম":"Staff name","পিন (লগইনের জন্য)":"PIN (for login)","যোগ করুন":"Add","কোনো স্টাফ নেই":"No staff",
+"এডমিন পাসওয়ার্ড বদলান":"Change admin password","নতুন পাসওয়ার্ড":"New password","সেভ":"Save","ব্যাকআপ":"Backup",
+"ডাটা ডাউনলোড (JSON)":"Download data (JSON)","ডাটা রিস্টোর":"Restore data",
+"কর্মী মুভমেন্ট রিপোর্ট":"Staff Movement Report","থেকে":"From","পর্যন্ত":"To","সবাই":"Everyone","কাজ":"Activity","স্ট্যাটাস":"Status",
+"সব":"All","ফিল্টার":"Filter","রিসেট":"Reset",
+'PDF: প্রিন্ট উইন্ডোতে "Save as PDF" সিলেক্ট করুন':'PDF: In the print window, select "Save as PDF"',
+"এরিয়া (প্রজেক্ট)":"Area (Project)","পরিকল্পনা":"Plan","সম্পন্ন নোট":"Completion note","কোনো তথ্য নেই":"No data",
+"নতুন বেনিফিশিয়ারি যোগ করুন":"Add New Beneficiary","-- চর সিলেক্ট করুন --":"-- Select char --","-- গ্রুপ সিলেক্ট করুন --":"-- Select group --",
+"নাম":"Name","পিতার নাম":"Father's name","মোবাইল":"Mobile","এনআইডি কার্ড নম্বর":"NID card number",
+"চর অনুযায়ী দেখুন":"View by char","গ্রুপ অনুযায়ী দেখুন":"View by group","সব চর":"All chars","সব গ্রুপ":"All groups","কোনো বেনিফিশিয়ারি নেই":"No beneficiaries",
+"ইনপুটের ধরন":"Input types","নতুন ধরন (যেমন: কীটনাশক)":"New type (e.g. Pesticide)","-- ইনপুট --":"-- Input --",
+"পরিমাণ (যেমন ৫ কেজি)":"Quantity (e.g. 5 kg)","কোনো ইনপুট সাপোর্ট নেই":"No input support",
+"কোনো বেনিফিশিয়ারি নেই। আগে বেনিফিশিয়ারি ট্যাবে যোগ করুন":"No beneficiaries. Add them in the Beneficiaries tab first",
+"বীজ":"Seed","সার":"Fertilizer","ভার্মি কম্পোস্ট":"Vermi compost",
+"চিলমারী":"Chilmari","গাইবান্দা":"Gaibandha","নারিস":"NARIS","কাদরি":"KADRI",
+"ডাটা সেভ করা যায়নি":"Could not save data","ভুল পাসওয়ার্ড":"Wrong password","নাম বা পিন ভুল":"Wrong name or PIN","স্টাফ সিলেক্ট করুন":"Select staff",
+"কমপক্ষে একটি এরিয়া সিলেক্ট করুন":"Select at least one area","কমপক্ষে একটি চর সিলেক্ট করুন":"Select at least one char",
+"এর প্রজেক্ট সিলেক্ট করুন":"- select a project","এর জন্য গ্রুপ সিলেক্ট করুন":"- select a group","এর কাজের ধরন সিলেক্ট করুন":"- select an activity type",
+"মুভমেন্ট সেভ হয়েছে":"Movement saved","কি কাজ সম্পন্ন হয়েছে তার নোট লিখুন":"Write a note on what work was completed",
+"মুছে ফেলবেন?":"Delete this?","মুছবেন?":"Delete?","আগে থেকেই আছে":"Already exists","নাম ও পিন দিন":"Enter name and PIN",
+"স্টাফ মুছবেন? (তার কাজ থাকবে)":"Delete staff? (their tasks will remain)","পরিবর্তন হয়েছে":"Changed","রিস্টোর হয়েছে":"Restored","ফাইল ঠিক নয়":"Invalid file",
+"গ্রুপ সিলেক্ট করুন":"Select a group","ইনপুটের ধরন সিলেক্ট করুন":"Select an input type","ভিজিট":"Visit","শুরু":"Start","আজ পর্যন্ত":"Today","লগআউট":"Logout","হোম":"Home"
+};
+let LANG="bn";try{LANG=localStorage.getItem("lang")||"bn"}catch(e){}
+const BNRE=/[\u0980-\u09FF]/;
+function tr(s){
+  if(LANG!=="en"||s==null)return s;
+  s=String(s);if(!BNRE.test(s))return s;
+  const t=s.trim();
+  if(EN[t]!==undefined)return s.replace(t,()=>EN[t]);
+  const m=t.match(/^([^\p{L}\p{N}]*)([\s\S]*?)([\s:।.…!?]*)$/u);
+  if(m&&m[2]&&EN[m[2]]!==undefined)return s.replace(t,()=>m[1]+EN[m[2]]+m[3].replace(/।/g,"."));
+  return s;
+}
+const langBtn=()=>`<div class="lang"><button class="${LANG==="bn"?"on":""}" onclick="setLang('bn')">BN</button><button class="${LANG==="en"?"on":""}" onclick="setLang('en')">EN</button></div>`;
+function setLang(l){LANG=l;try{localStorage.setItem("lang",l)}catch(e){}document.documentElement.lang=l;document.title=l==="en"?"Staff Movement Monitoring - SED Sector":"স্টাফ মুভমেন্ট মনিটরিং - SED সেক্টর";render()}
+const _al=window.alert.bind(window),_cf=window.confirm.bind(window),_pr=window.prompt.bind(window);
+window.alert=m=>_al(tr(m));window.confirm=m=>_cf(tr(m));window.prompt=(m,d)=>_pr(tr(m),d);
+function trTxt(n){const v=n.nodeValue;if(v&&BNRE.test(v)){const t=tr(v);if(t!==v)n.nodeValue=t}}
+function trAttrs(e){["placeholder","title","aria-label"].forEach(a=>{const v=e.getAttribute(a);if(v&&BNRE.test(v)){const t=tr(v);if(t!==v)e.setAttribute(a,t)}})}
+function trTree(r){
+  if(LANG!=="en")return;
+  if(r.nodeType===3)return trTxt(r);
+  if(r.nodeType!==1||/^(SCRIPT|STYLE)$/.test(r.nodeName))return;
+  trAttrs(r);r.querySelectorAll("[placeholder],[title],[aria-label]").forEach(trAttrs);
+  const w=document.createTreeWalker(r,NodeFilter.SHOW_TEXT),L=[];let n;
+  while(n=w.nextNode()){if(!/^(SCRIPT|STYLE)$/.test(n.parentNode.nodeName))L.push(n)}
+  L.forEach(trTxt);
+}
+const ACTS=["ট্রেনিং","মিটিং","লেসন লার্নিং","বেনিফিশিয়ারি ভিজিট","ফলোআপ","SED হাব ভিজিট"];
+const KEY="staffMonitorV1";
+let D={staff:[],groups:[],haps:[],chars:[],moves:[],projects:["নারিস","কাদরি"],areas:["চিলমারী","গাইবান্দা"],bens:[],inputs:[],inputTypes:["বীজ","সার","ভার্মি কম্পোস্ট"],groupChar:{},hapChar:{},adminPass:"admin123"};
+if(!useFB){try{const s=localStorage.getItem(KEY);if(s)D=Object.assign(D,JSON.parse(s))}catch(e){}}
+const saveCfg=()=>db.collection("app").doc("config").set({staff:D.staff,groups:D.groups,haps:D.haps,chars:D.chars,groupChar:D.groupChar,hapChar:D.hapChar,inputTypes:D.inputTypes,projects:D.projects,areas:D.areas,adminPass:D.adminPass});
+const save=()=>{if(useFB){saveCfg();return}try{localStorage.setItem(KEY,JSON.stringify(D))}catch(e){alert("ডাটা সেভ করা যায়নি")}};
+const saveMove=m=>{if(useFB)db.collection("moves").doc(m.id).set(m);else save()};
+const saveBen=b=>{if(useFB)db.collection("bens").doc(b.id).set(b);else save()};
+const delBenDb=id=>{if(useFB)db.collection("bens").doc(id).delete();else save()};
+const saveInp=i=>{if(useFB)db.collection("inputs").doc(i.id).set(i);else save()};
+const delInpDb=id=>{if(useFB)db.collection("inputs").doc(id).delete();else save()};
+const delMoveDb=id=>{if(useFB)db.collection("moves").doc(id).delete();else save()};
+function refresh(){
+  if(!me){if(!($("pw")&&$("pw").value)&&!($("sn")&&$("sn").value)&&$("lf"))loginView2();return}
+  if(tab==="ben"){if($("bl"))benList();return}
+  if(tab==="inp"){const a=document.activeElement;if($("il")&&!(a&&$("il").contains(a)))inputList();return}
+  if(tab==="plan"||tab==="move")return;
+  const a=document.activeElement;if(a&&/INPUT|TEXTAREA|SELECT/.test(a.tagName))return;
+  render();
+}
+let me=null,tab="",F={};
+const $=id=>document.getElementById(id);
+const esc=s=>String(s==null?"":s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const today=()=>{const d=new Date();return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0")};
+const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+const sName=id=>(D.staff.find(s=>s.id===id)||{}).name||"-";
+const toArr=v=>Array.isArray(v)?v:(v?[v]:[]);
+const j=v=>toArr(v).map(tr).join(", ");
+const chk=(n,arr)=>arr.length?`<div class="ck">${arr.map(x=>`<label><input type="checkbox" name="${n}" value="${esc(x)}">${esc(x)}</label>`).join("")}</div>`:'<span class="muted">এডমিন এখনো যোগ করেনি (এই চরের জন্য)</span>';
+const pick=n=>[...document.querySelectorAll('input[name='+n+']:checked')].map(x=>x.value);
+const opts=(arr,sel,ph)=>`<option value="">${ph||"-- সিলেক্ট --"}</option>`+arr.map(x=>`<option value="${esc(x)}" ${x===sel?"selected":""}>${esc(x)}</option>`).join("");
+
+function render(){
+  topBar();
+  if(!me)return loginView();
+  if(me.role==="admin"){tab=tab||"home";adminView()}else{tab=tab||"home";staffView()}
+}
+
+function loginView(){
+  $("app").innerHTML=`<div class="card">${ring()}<h3>লগইন</h3>
+  <label>ভূমিকা</label><select id="role" onchange="loginView2()"><option value="staff">স্টাফ</option><option value="admin">এডমিন / ম্যানেজার</option></select>
+  <div id="lf"></div></div>
+  ${useFB?`<p class="muted">✅ ডাটা অনলাইনে সবার সাথে শেয়ার হচ্ছে। এডমিনের ডিফল্ট পাসওয়ার্ড: admin123 (সেটিংসে বদলান)।</p>`:`<p class="muted">⚠ Firebase সেট করা হয়নি, তাই ডাটা শুধু এই ডিভাইসে সেভ হচ্ছে। এডমিনের ডিফল্ট পাসওয়ার্ড: admin123।</p>`}`;
+  loginView2();
+}
+function loginView2(){
+  const r=$("role").value;
+  $("lf").innerHTML=r==="admin"?`<label>পাসওয়ার্ড</label><input id="pw" type="password"><br><br><button onclick="doLogin()">প্রবেশ</button>`
+  :`<label>আপনার নাম</label><select id="sn">${`<option value="">-- সিলেক্ট --</option>`+D.staff.map(s=>`<option value="${s.id}">${esc(s.name)}</option>`).join("")}</select>
+  <label>পিন</label><input id="pw" type="password" inputmode="numeric"><br><br><button onclick="doLogin()">প্রবেশ</button>`;
+}
+function doLogin(){
+  if($("role").value==="admin"){
+    if($("pw").value===D.adminPass){me={role:"admin"};tab="";render()}else alert("ভুল পাসওয়ার্ড");
+  }else{
+    const s=D.staff.find(x=>x.id===$("sn").value);
+    if(s&&$("pw").value===s.pin){me={role:"staff",id:s.id,name:s.name};tab="";render()}else alert("নাম বা পিন ভুল");
+  }
+}
+
+/* ---------- Staff ---------- */
+const TL={move:["➕","মুভমেন্ট"],report:["📊","রিপোর্ট"],ben:["🧑‍🌾","বেনিফিশিয়ারি"],inp:["🌱","ইনপুট সাপোর্ট"],areas:["🗺","এরিয়া"],projects:["📁","প্রজেক্ট"],groups:["👥","গ্রুপ"],haps:["📍","SED হাব"],chars:["🏝","চর"],staff:["👤","স্টাফ"],set:["⚙️","সেটিংস"],plan:["➕","নতুন পরিকল্পনা"],my:["📋","আমার কাজ"]};
+const MENU=()=>me.role==="admin"?[
+ {t:"মুভমেন্ট ও রিপোর্ট",s:"পরিকল্পনা, বাস্তবায়ন ও রিপোর্ট",c:"indigo",i:"🚶",k:["move","report"]},
+ {t:"বেনিফিশিয়ারি ও ইনপুট",s:"বেনিফিশিয়ারি তালিকা ও ইনপুট সাপোর্ট",c:"teal",i:"🌱",k:["ben","inp"]},
+ {t:"এরিয়া ও প্রজেক্ট",s:"কাজের এলাকা ও প্রজেক্টের নাম",c:"orange",i:"🗺",k:["areas","projects"]},
+ {t:"চর, গ্রুপ ও SED হাব",s:"চর, গ্রুপ ও হাবের তালিকা",c:"blue",i:"🏝",k:["chars","groups","haps"]},
+ {t:"স্টাফ ও সেটিংস",s:"স্টাফ, পিন ও ব্যাকআপ",c:"green",i:"⚙️",k:["staff","set"]}
+]:[
+ {t:"আমার মুভমেন্ট",s:"পরিকল্পনা ও বাস্তবায়ন",c:"indigo",i:"🚶",k:["plan","my"]},
+ {t:"বেনিফিশিয়ারি ও ইনপুট",s:"বেনিফিশিয়ারি ও ইনপুট সাপোর্ট",c:"teal",i:"🌱",k:["ben","inp"]}
+];
+const ring=()=>`<div class="ring">${[0,1,2,3,4,5,6,7].map(i=>`<span style="--i:${i}">F</span>`).join("")}</div>`;
+const go=k=>{tab=k;render()};
+const LO='<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg>';
+const logout=()=>{me=null;tab="";render()};
+const syncTxt=()=>useFB?(navigator.onLine?"☁️✓ "+tr("আপ টু ডেট"):"📴 "+tr("অফলাইন (নেট এলে জমা হবে)")):"💾 "+tr("লোকাল ডাটা");
+const setSync=()=>{const e=$("sync");if(e)e.innerHTML=syncTxt()};
+function greet(){const h=new Date().getHours();return h<5?"শুভ রাত্রি":h<12?"শুভ সকাল":h<15?"শুভ দুপুর":h<18?"শুভ বিকাল":h<20?"শুভ সন্ধ্যা":"শুভ রাত্রি"}
+function topBar(){
+  let h;
+  if(!me)h=`<div class="hero sm">${ring()}<div class="ht" style="justify-content:flex-end">${langBtn()}</div><div class="hm" style="margin-top:10px"><div class="av">🌾</div><div><small>এগ্রিকালচার · SED সেক্টর</small><h2 style="margin:2px 0 0">স্টাফ মুভমেন্ট মনিটরিং</h2></div></div></div>`;
+  else if(!tab||tab==="home"){
+    const nm=me.role==="admin"?"এডমিন":me.name,ini=me.role==="admin"?"এড":nm.trim().split(/\s+/).map(w=>[...w][0]).slice(0,2).join("");
+    const tm=D.moves.filter(m=>m.date===today()&&(me.role==="admin"||m.staffId===me.id)),pl=tm.filter(m=>m.status==="পরিকল্পিত").length;
+    let dt="";try{dt=new Date().toLocaleDateString(LANG==="en"?"en-GB":"bn-BD",{day:"numeric",month:"long",year:"numeric"})}catch(e){dt=today()}
+    h=`<div class="hero">${ring()}<div class="ht"><span class="chip ok" id="sync">${syncTxt()}</span><div class="rt">${langBtn()}<button class="ico" onclick="logout()" aria-label="লগআউট">${LO}</button></div></div>
+    <div class="hm"><div class="av">${esc(ini)}</div><div><small>${greet()}</small><h2>${esc(nm)}</h2><div class="chips"><span class="chip">${me.role==="admin"?"🛡 এডমিন / ম্যানেজার":"👤 স্টাফ"}</span><span class="chip">📅 ${esc(dt)}</span></div></div></div>
+    <div class="pc"><div style="font-size:26px">📊</div><div><small>আজকের মুভমেন্ট</small><b>${tr("মোট")} ${tm.length} · ${tr("পরিকল্পিত")} ${pl} · ${tr("বাস্তবায়িত")} ${tm.length-pl}</b></div></div></div>`;
+  }else h=`<div class="hero sm">${ring()}<div class="ht"><button class="ico" onclick="go('home')" aria-label="হোম">←</button><b class="pt">${(TL[tab]||["",""]).join(" ")}</b><div class="rt">${langBtn()}<button class="ico" onclick="logout()" aria-label="লগআউট">${LO}</button></div></div></div>`;
+  $("top").innerHTML=h;
+}
+function homeView(){
+  $("app").innerHTML=`<div class="sh"><i></i><div><h2>${me.role==="admin"?"ব্যবস্থাপনা ও মনিটরিং":"মাঠের তথ্য এন্ট্রি"}</h2><p>আজ যে কাজ করবেন, সেটি বেছে নিন।</p></div></div>`+MENU().map(g=>`<div class="grp ${g.c}">${ring()}<div class="gh"><div class="ib">${g.i}</div><div><h3>${g.t}</h3><small>${g.s}</small></div><span class="cnt">${g.k.length}</span></div><hr><div class="grid">${g.k.map(k=>`<div class="tile" onclick="go('${k}')"><div class="ti">${TL[k][0]}</div><b>${TL[k][1]}</b></div>`).join("")}</div></div>`).join("");
+}
+function shell(){$("app").innerHTML='<div id="c"></div>'}
+function staffView(){
+  if(tab==="home")return homeView();
+  shell();
+  tab==="plan"?planForm():tab==="ben"?benView():tab==="inp"?inpView():myList();
+}
+function planForm(){
+  $("c").innerHTML=`<div class="card"><h3>সকালের পরিকল্পনা</h3>
+  ${me.role==="admin"?`<label>স্টাফ</label><select id="ps"><option value="">-- সিলেক্ট --</option>${D.staff.map(s=>`<option value="${s.id}">${esc(s.name)}</option>`).join("")}</select>`:""}
+  <label>তারিখ</label><input type="date" id="pd" value="${today()}">
+  <label>এরিয়া সিলেক্ট করুন (একাধিক)</label>
+  <div class="ck">${D.areas.map((a,i)=>`<label><input type="checkbox" name="ar" value="${i}" onchange="areaChange()">${esc(a)}</label>`).join("")}</div>
+  <div id="ab"></div>
+  <label>চর সিলেক্ট করুন (একাধিক)</label>
+  <div class="ck">${[...D.chars.map((c,i)=>[i,c]),["x","চর ছাড়া"]].map(([k,c])=>`<label><input type="checkbox" name="pc" value="${k}" onchange="rebuild()">${esc(c)}</label>`).join("")}</div>
+  <div id="gb"></div>
+  <label>পরিকল্পনার নোট (ঐচ্ছিক)</label><textarea id="pn" rows="2"></textarea><br>
+  <button onclick="addPlan()">পরিকল্পনা সেভ করুন</button></div>`;
+}
+let AS={};
+function areaChange(){
+  document.querySelectorAll("#ab .ablk").forEach(b=>{AS[b.dataset.i]=pick("pj_"+b.dataset.i)});
+  $("ab").innerHTML=pick("ar").map(i=>`<div class="ablk card" data-i="${i}" style="background:#f6faf5;margin-top:10px"><b>🗺 ${esc(D.areas[i])}</b><label>প্রজেক্ট সিলেক্ট করুন (একাধিক)</label>${chk2("pj_"+i,D.projects,AS[i]||[])}</div>`).join("");
+}
+const apTxt=m=>toArr(m.ap).map(x=>tr(x.a)+" ("+x.p.map(tr).join(", ")+")").join(", ");
+function addPlan(){
+  if(me.role==="admin"&&!$("ps").value)return alert("স্টাফ সিলেক্ট করুন");
+  const as=pick("ar");if(!as.length)return alert("কমপক্ষে একটি এরিয়া সিলেক্ট করুন");
+  const ap=[];for(const i of as){const pj=pick("pj_"+i);if(!pj.length)return alert(tr(D.areas[i])+" "+tr("এর প্রজেক্ট সিলেক্ট করুন"));ap.push({a:D.areas[i],p:pj})}
+  const cs=pick("pc");if(!cs.length)return alert("কমপক্ষে একটি চর সিলেক্ট করুন");
+  const out=[];
+  for(const c of cs){
+    const cn=c==="x"?"":D.chars[c],gs=pick("g_"+c);
+    if(!gs.length)return alert(tr(cn||"চর ছাড়া")+" "+tr("এর জন্য গ্রুপ সিলেক্ট করুন"));
+    for(const gi of gs){
+      const k=c+"_"+gi,a=pick("a_"+k);
+      if(!a.length)return alert(tr(cn||"চর ছাড়া")+" / "+tr(gi==="x"?"গ্রুপ ছাড়া":D.groups[gi])+" "+tr("এর কাজের ধরন সিলেক্ট করুন"));
+      out.push({id:uid(),staffId:me.role==="admin"?$("ps").value:me.id,date:$("pd").value,ap:ap,act:a,group:gi==="x"?[]:[D.groups[gi]],hap:a.includes(HUBV)?pick("h_"+k):[],bens:a.includes(BENV)?pick("b_"+k):[],fol:a.includes("ফলোআপ")?pick("f_"+k):[],char:cn?[cn]:[],plan:$("pn").value,status:"পরিকল্পিত",note:""});
+    }
+  }
+  D.moves.push(...out);out.forEach(saveMove);tab=me.role==="admin"?"report":"my";render();alert("মুভমেন্ট সেভ হয়েছে");
+}
+const HUBV="SED হাব ভিজিট";
+const chk2=(n,arr,on,oc)=>arr.length?`<div class="ck">${arr.map(x=>`<label><input type="checkbox" name="${n}" value="${esc(x)}" ${on.includes(x)?"checked":""} ${oc||""}>${esc(x)}</label>`).join("")}</div>`:'<span class="muted">এডমিন এখনো যোগ করেনি</span>';
+let GS={},GG={};
+function groupsFor(c){
+  const l=D.groups.map((g,i)=>[i,g]).filter(([i,g])=>{const m=D.groupChar[g];return c==="x"?!m:(!m||m===D.chars[c])});
+  return l.concat([["x","গ্রুপ ছাড়া"]]);
+}
+function hapsFor(c){return D.haps.filter(h=>{const m=D.hapChar[h];return c==="x"?!m:(!m||m===D.chars[c])})}
+function rebuild(){
+  document.querySelectorAll("#gb .cblk").forEach(b=>{GG[b.dataset.c]=pick("g_"+b.dataset.c)});
+  document.querySelectorAll("#gb .sblk").forEach(b=>{const k=b.dataset.k;GS[k]={a:pick("a_"+k),h:pick("h_"+k),b:pick("b_"+k),f:pick("f_"+k)}});
+  $("gb").innerHTML=pick("pc").map(c=>{
+    const cn=c==="x"?"চর ছাড়া":D.chars[c],sel=GG[c]||[];
+    return `<div class="cblk card" data-c="${c}" style="background:#f6faf5;margin-top:10px"><b>🏝 ${esc(cn)}</b>
+    <label>গ্রুপ সিলেক্ট করুন (একাধিক)</label><div class="ck">${groupsFor(c).map(([gi,gn])=>`<label><input type="checkbox" name="g_${c}" value="${gi}" ${sel.includes(String(gi))?"checked":""} onchange="rebuild()">${esc(gn)}</label>`).join("")}</div>
+    ${sel.map(gi=>{const k=c+"_"+gi,g=GS[k]||{a:[],h:[],b:[],f:[]},gn=gi==="x"?"গ্রুপ ছাড়া":D.groups[gi];
+      return `<div class="sblk" data-k="${k}" style="background:#fff;border:1px solid #d8e4d5;border-radius:8px;padding:8px;margin-top:8px"><b>🔹 ${esc(gn)}</b>
+      <label>কাজের ধরন</label>${chk2("a_"+k,ACTS,g.a,`onchange="hubToggle('${k}')"`)}
+      <div id="hb_${k}" style="display:${g.a.includes(HUBV)?"block":"none"}"><label>SED হাব</label>${chk2("h_"+k,hapsFor(c),g.h)}</div>
+      <div id="bb_${k}" style="display:${g.a.includes(BENV)?"block":"none"}"><label>বেনিফিশিয়ারি (ভিজিট)</label>${chkId("b_"+k,benFor(c,gi).map(b=>[b.id,b.name]),g.b,"এই গ্রুপে কোনো বেনিফিশিয়ারি যোগ করা হয়নি")}</div>
+      <div id="fb_${k}" style="display:${g.a.includes("ফলোআপ")?"block":"none"}"><label>ফলোআপ (ইনপুট সাপোর্ট পাওয়া বেনিফিশিয়ারি)</label>${chkId("f_"+k,benFor(c,gi).filter(b=>D.inputs.some(i=>i.benId===b.id)).map(b=>[b.id,b.name+" — "+[...new Set(D.inputs.filter(i=>i.benId===b.id).map(i=>tr(i.type)))].join(", ")]),g.f,"এই গ্রুপে কেউ ইনপুট সাপোর্ট পায়নি")}</div></div>`}).join("")}</div>`}).join("");
+}
+function hubToggle(k){const a=pick("a_"+k),t=(id,on)=>{$(id+k).style.display=on?"block":"none"};t("hb_",a.includes(HUBV));t("bb_",a.includes(BENV));t("fb_",a.includes("ফলোআপ"))}
+function myList(){
+  const l=D.moves.filter(m=>m.staffId===me.id).sort((a,b)=>b.date.localeCompare(a.date));
+  $("c").innerHTML=l.length?l.map(m=>`<div class="card"><div class="item" style="border:0;padding:0"><b>${esc(j(m.act))}</b><span class="badge ${m.status==="বাস্তবায়িত"?"d":"p"}">${m.status}</span></div>
+  <div class="muted">${m.date} · ${apTxt(m)?esc(apTxt(m))+" · ":""}${esc(j(m.group)||"-")} · ${esc(j(m.hap)||"-")} · ${tr("চর")}: ${esc(j(m.char)||"-")}</div>
+  ${m.plan?`<div>${tr("পরিকল্পনা")}: ${esc(m.plan)}</div>`:""}
+  ${benTxt(m)?`<div>${tr("বেনিফিশিয়ারি")}: ${esc(benTxt(m))}</div>`:""}
+  ${m.status==="বাস্তবায়িত"?`<div><b>সম্পন্ন কাজ:</b> ${esc(m.note)}</div>`:`<button class="sm" style="margin-top:8px" onclick="doneForm('${m.id}')">✔ বাস্তবায়ন করুন</button>`}
+  <button class="sm red" style="margin-top:8px" onclick="delMove('${m.id}')">মুছুন</button></div>`).join(""):`<div class="card muted">কোনো কাজ নেই।</div>`;
+}
+function doneForm(id){
+  const n=prompt("কি কাজ সম্পন্ন হয়েছে তার নোট লিখুন:");
+  if(n===null)return;
+  const m=D.moves.find(x=>x.id===id);m.status="বাস্তবায়িত";m.note=n;saveMove(m);render();
+}
+function delMove(id){if(confirm("মুছে ফেলবেন?")){D.moves=D.moves.filter(m=>m.id!==id);delMoveDb(id);render()}}
+
+/* ---------- Admin ---------- */
+function adminView(){
+  if(tab==="home")return homeView();
+  shell();
+  if(tab==="move")planForm();else if(tab==="ben")benView();else if(tab==="inp")inpView();else if(tab==="report")report();else if(tab==="staff")staffAdm();else if(tab==="set")settings();else listAdm(tab);
+}
+const MP=k=>k==="groups"?D.groupChar:k==="haps"?D.hapChar:null;
+const addName=k=>LANG==="en"?"Add "+tr(LT[k])+" name":LT[k]+"-এর নাম যোগ করুন";
+const LT={areas:"এরিয়া",projects:"প্রজেক্ট",groups:"গ্রুপ",haps:"SED হাব",chars:"চর"};
+function listAdm(k){
+  $("c").innerHTML=`<div class="card"><h3>${addName(k)}</h3><div class="row"><input id="nv" placeholder="নাম লিখুন">${MP(k)?`<select id="gc">${opts(D.chars,"","-- কোন চরের --")}</select>`:""}<button style="flex:0">যোগ</button></div></div>
+  <div class="card">${D[k].length?D[k].map((x,i)=>`<div class="item"><span>${esc(x)}${MP(k)?` <span class="muted">(${tr("চর")}: ${esc(tr(MP(k)[x]||"নির্ধারিত নেই"))})</span>`:""}</span><button class="sm red" onclick="delItem('${k}',${i})">মুছুন</button></div>`).join(""):'<span class="muted">কিছু যোগ করা হয়নি</span>'}</div>`;
+  document.querySelector("#c button").onclick=()=>{const v=$("nv").value.trim();if(!v)return;if(D[k].includes(v))return alert("আগে থেকেই আছে");D[k].push(v);if(MP(k)&&$("gc").value)MP(k)[v]=$("gc").value;save();render()};
+}
+function delItem(k,i){if(confirm("মুছবেন?")){const nm=D[k][i];D[k].splice(i,1);if(MP(k))delete MP(k)[nm];save();render()}}
+function staffAdm(){
+  $("c").innerHTML=`<div class="card"><h3>স্টাফ যোগ করুন</h3><div class="row"><input id="sn" placeholder="স্টাফের নাম"><input id="sp" placeholder="পিন (লগইনের জন্য)" inputmode="numeric"></div><br><button onclick="addStaff()">যোগ করুন</button></div>
+  <div class="card">${D.staff.length?D.staff.map(s=>`<div class="item"><span>${esc(s.name)} <span class="muted">(${tr("পিন")}: ${esc(s.pin)})</span></span><button class="sm red" onclick="delStaff('${s.id}')">মুছুন</button></div>`).join(""):'<span class="muted">কোনো স্টাফ নেই</span>'}</div>`;
+}
+function addStaff(){const n=$("sn").value.trim(),p=$("sp").value.trim();if(!n||!p)return alert("নাম ও পিন দিন");D.staff.push({id:uid(),name:n,pin:p});save();render()}
+function delStaff(id){if(confirm("স্টাফ মুছবেন? (তার কাজ থাকবে)")){D.staff=D.staff.filter(s=>s.id!==id);save();render()}}
+function settings(){
+  $("c").innerHTML=`<div class="card"><h3>এডমিন পাসওয়ার্ড বদলান</h3><input id="np" type="text" placeholder="নতুন পাসওয়ার্ড"><br><br><button onclick="if($('np').value){D.adminPass=$('np').value;save();alert('পরিবর্তন হয়েছে')}">সেভ</button></div>
+  <div class="card"><h3>ব্যাকআপ</h3><button class="sec" onclick="backup()">ডাটা ডাউনলোড (JSON)</button> <button class="sec" onclick="$('rf').click()">ডাটা রিস্টোর</button><input type="file" id="rf" class="hide" accept=".json" onchange="restore(this)"></div>`;
+}
+function backup(){dl(new Blob([JSON.stringify(D)],{type:"application/json"}),"backup.json")}
+function restore(i){const r=new FileReader();r.onload=()=>{try{D=Object.assign(D,JSON.parse(r.result));save();if(useFB)D.moves.forEach(saveMove);if(useFB){D.bens.forEach(saveBen);D.inputs.forEach(saveInp)}alert("রিস্টোর হয়েছে");render()}catch(e){alert("ফাইল ঠিক নয়")}};r.readAsText(i.files[0])}
+function dl(b,n){const a=document.createElement("a");a.href=URL.createObjectURL(b);a.download=n;a.click()}
+
+/* ---------- Beneficiary ---------- */
+const BENV="বেনিফিশিয়ারি ভিজিট";
+const benChar=b=>b.char||D.groupChar[b.group]||"";
+const cOpts=ph=>`<option value="">${ph}</option>`+D.chars.map(c=>`<option value="${esc(c)}">${esc(c)}</option>`).join("");
+const gOpts=(cn,ph)=>`<option value="">${ph}</option>`+D.groups.filter(g=>{const m=D.groupChar[g];return !cn||!m||m===cn}).map(g=>`<option value="${esc(g)}">${esc(g)}${D.groupChar[g]&&!cn?" ("+tr("চর")+": "+esc(tr(D.groupChar[g]))+")":""}</option>`).join("");
+const benFor=(c,gi)=>gi==="x"?[]:D.bens.filter(b=>b.group===D.groups[gi]&&(c==="x"||!benChar(b)||benChar(b)===D.chars[c]));
+const chkId=(n,items,on,hint)=>items.length?`<div class="ck">${items.map(([id,t])=>`<label><input type="checkbox" name="${n}" value="${id}" ${on.includes(id)?"checked":""}>${esc(t)}</label>`).join("")}</div>`:`<span class="muted">${hint}</span>`;
+const bn=ids=>toArr(ids).map(id=>(D.bens.find(b=>b.id===id)||{}).name).filter(Boolean).join(", ");
+const benTxt=m=>[bn(m.bens)&&tr("ভিজিট")+": "+bn(m.bens),bn(m.fol)&&tr("ফলোআপ")+": "+bn(m.fol)].filter(Boolean).join(" | ");
+const benFilter=(cf,gf)=>D.bens.filter(b=>(!cf||benChar(b)===cf)&&(!gf||b.group===gf)).sort((a,b)=>a.group.localeCompare(b.group)||a.name.localeCompare(b.name));
+function benView(){
+  $("c").innerHTML=`<div class="card"><h3>নতুন বেনিফিশিয়ারি যোগ করুন</h3>
+  <label>চর</label><select id="bc" onchange="$('bg').innerHTML=gOpts(this.value,'-- গ্রুপ সিলেক্ট করুন --')">${cOpts("-- চর সিলেক্ট করুন --")}</select>
+  <label>গ্রুপ</label><select id="bg">${gOpts("","-- গ্রুপ সিলেক্ট করুন --")}</select>
+  <label>নাম</label><input id="bn">
+  <label>পিতার নাম</label><input id="bf">
+  <label>মোবাইল</label><input id="bm" type="tel" inputmode="numeric">
+  <label>এনআইডি কার্ড নম্বর</label><input id="bi" inputmode="numeric"><br><br>
+  <button onclick="addBen()">যোগ করুন</button></div>
+  <div class="card"><div class="row"><div><label>চর অনুযায়ী দেখুন</label><select id="bcf" onchange="$('bfl').innerHTML=gOpts(this.value,'সব গ্রুপ');benList()">${cOpts("সব চর")}</select></div>
+  <div><label>গ্রুপ অনুযায়ী দেখুন</label><select id="bfl" onchange="benList()">${gOpts("","সব গ্রুপ")}</select></div></div><div id="bl"></div></div>`;
+  benList();
+}
+function addBen(){
+  const g=$("bg").value,n=$("bn").value.trim();
+  if(!g)return alert("গ্রুপ সিলেক্ট করুন");
+  if(!n)return alert("নাম লিখুন");
+  const b={id:uid(),char:$("bc").value||D.groupChar[g]||"",group:g,name:n,father:$("bf").value.trim(),mobile:$("bm").value.trim(),nid:$("bi").value.trim()};
+  D.bens.push(b);saveBen(b);
+  ["bn","bf","bm","bi"].forEach(i=>$(i).value="");$("bn").focus();benList();
+}
+function benList(){
+  const l=benFilter($("bcf")?$("bcf").value:"",$("bfl")?$("bfl").value:"");
+  $("bl").innerHTML=`<p class="muted">${tr("মোট")}: ${l.length}${LANG==="en"?"":" জন"}</p>`+(l.map(b=>`<div class="item"><div><b>${esc(b.name)}</b> <span class="muted">(${esc(tr(benChar(b)||"চর নেই"))} · ${esc(b.group)})</span><div class="muted">${LANG==="en"?"Father":"পিতা"}: ${esc(b.father||"-")} · ${tr("মোবাইল")}: ${esc(b.mobile||"-")} · NID: ${esc(b.nid||"-")}</div></div>${me.role==="admin"?`<button class="sm red" onclick="delBen('${b.id}')">মুছুন</button>`:""}</div>`).join("")||'<span class="muted">কোনো বেনিফিশিয়ারি নেই</span>');
+}
+function delBen(id){if(confirm("মুছবেন?")){D.bens=D.bens.filter(b=>b.id!==id);delBenDb(id);benList()}}
+
+/* ---------- Input support ---------- */
+function inpView(){
+  $("c").innerHTML=`${me.role==="admin"?`<div class="card"><h3>ইনপুটের ধরন</h3><div class="row"><input id="nt" placeholder="নতুন ধরন (যেমন: কীটনাশক)"><button style="flex:0" onclick="addType()">যোগ</button></div><div class="muted" style="margin-top:6px">${D.inputTypes.map(esc).join(" · ")}</div></div>`:""}
+  <div class="card"><div class="row"><div><label>চর</label><select id="icf" onchange="$('igf').innerHTML=gOpts(this.value,'সব গ্রুপ');inputList()">${cOpts("সব চর")}</select></div>
+  <div><label>গ্রুপ</label><select id="igf" onchange="inputList()">${gOpts("","সব গ্রুপ")}</select></div></div></div><div id="il"></div>`;
+  inputList();
+}
+function addType(){const v=$("nt").value.trim();if(!v)return;if(D.inputTypes.includes(v))return alert("আগে থেকেই আছে");D.inputTypes.push(v);save();inpView()}
+function inputList(){
+  const l=benFilter($("icf")?$("icf").value:"",$("igf")?$("igf").value:"");
+  $("il").innerHTML=l.map(b=>{const ins=D.inputs.filter(i=>i.benId===b.id);
+    return `<div class="card"><b>${esc(b.name)}</b> <span class="muted">(${esc(tr(benChar(b)||"চর নেই"))} · ${esc(b.group)})</span>
+    <div style="margin:6px 0">${ins.map(i=>`<span class="badge d" style="display:inline-block;margin:2px">${esc(tr(i.type))}${i.qty?": "+esc(i.qty):""} · ${esc(i.date)}${me.role==="admin"?` <a onclick="delInp('${i.id}')" style="cursor:pointer">✕</a>`:""}</span>`).join("")||'<span class="muted">কোনো ইনপুট সাপোর্ট নেই</span>'}</div>
+    <div class="row"><select id="it_${b.id}">${opts(D.inputTypes,"","-- ইনপুট --")}</select><input id="iq_${b.id}" placeholder="পরিমাণ (যেমন ৫ কেজি)"><button style="flex:0" onclick="addInp('${b.id}')">যোগ</button></div></div>`}).join("")||'<div class="card muted">কোনো বেনিফিশিয়ারি নেই। আগে বেনিফিশিয়ারি ট্যাবে যোগ করুন।</div>';
+}
+function addInp(id){
+  const t=$("it_"+id).value;if(!t)return alert("ইনপুটের ধরন সিলেক্ট করুন");
+  const i={id:uid(),benId:id,type:t,qty:$("iq_"+id).value.trim(),date:today(),by:me.role==="admin"?"এডমিন":me.name};
+  D.inputs.push(i);saveInp(i);inputList();
+}
+function delInp(id){if(confirm("মুছবেন?")){D.inputs=D.inputs.filter(i=>i.id!==id);delInpDb(id);inputList()}}
+
+/* ---------- Report ---------- */
+function filtered(){
+  return D.moves.filter(m=>(!F.from||m.date>=F.from)&&(!F.to||m.date<=F.to)&&(!F.s||m.staffId===F.s)&&(!F.a||toArr(m.act).includes(F.a))&&(!F.st||m.status===F.st)&&(!F.ar||toArr(m.ap).some(x=>x.a===F.ar))&&(!F.pj||toArr(m.ap).some(x=>x.p.includes(F.pj)))&&(!F.ch||toArr(m.char).includes(F.ch))&&(!F.gr||toArr(m.group).includes(F.gr))&&(!F.hb||toArr(m.hap).includes(F.hb))).sort((a,b)=>b.date.localeCompare(a.date));
+}
+function report(){
+  const l=filtered(),pl=l.filter(m=>m.status==="পরিকল্পিত").length,dn=l.length-pl;
+  $("c").innerHTML=`<div class="card noprint"><div class="row">
+  <div><label>থেকে</label><input type="date" id="ff" onchange="applyF()" value="${F.from||""}"></div>
+  <div><label>পর্যন্ত</label><input type="date" id="ft" onchange="applyF()" value="${F.to||""}"></div>
+  <div><label>স্টাফ</label><select id="fs" onchange="applyF()"><option value="">সবাই</option>${D.staff.map(s=>`<option value="${s.id}" ${F.s===s.id?"selected":""}>${esc(s.name)}</option>`).join("")}</select></div>
+  <div><label>কাজ</label><select id="fa" onchange="applyF()">${opts(ACTS,F.a,"সব")}</select></div>
+  <div><label>স্ট্যাটাস</label><select id="fst" onchange="applyF()">${opts(["পরিকল্পিত","বাস্তবায়িত"],F.st,"সব")}</select></div>
+  <div><label>এরিয়া</label><select id="far" onchange="applyF()">${opts(D.areas,F.ar,"সব")}</select></div><div><label>প্রজেক্ট</label><select id="fpj" onchange="applyF()">${opts(D.projects,F.pj,"সব")}</select></div>
+  <div><label>চর</label><select id="fch" onchange="applyF()">${opts(D.chars,F.ch,"সব")}</select></div><div><label>গ্রুপ</label><select id="fgr" onchange="applyF()">${opts(D.groups,F.gr,"সব")}</select></div><div><label>SED হাব</label><select id="fhb" onchange="applyF()">${opts(D.haps,F.hb,"সব")}</select></div></div><br>
+  <button onclick="applyF()">ফিল্টার</button> <button class="sec" onclick="F={};render()">রিসেট</button>
+  <button class="sec" onclick="csv()">⬇ Excel/CSV</button> <button class="sec" onclick="window.print()">⬇ PDF</button>
+  <div class="muted">PDF: প্রিন্ট উইন্ডোতে "Save as PDF" সিলেক্ট করুন</div></div>
+  <div class="card"><h3>কর্মী মুভমেন্ট রিপোর্ট</h3>
+  <div class="muted"><b>${esc(filtTxt())}</b></div><br>
+  <div class="stats"><div><b>${l.length}</b>মোট</div><div><b>${pl}</b>পরিকল্পিত</div><div><b>${dn}</b>বাস্তবায়িত</div></div><br>
+  <div class="scroll"><table><tr><th>তারিখ</th><th>স্টাফ</th><th>এরিয়া (প্রজেক্ট)</th><th>কাজ</th><th>গ্রুপ</th><th>SED হাব</th><th>চর</th><th>বেনিফিশিয়ারি</th><th>স্ট্যাটাস</th><th>পরিকল্পনা</th><th>সম্পন্ন নোট</th></tr>
+  ${l.map(m=>`<tr><td>${m.date}</td><td>${esc(sName(m.staffId))}</td><td>${esc(apTxt(m))}</td><td>${esc(j(m.act))}</td><td>${esc(j(m.group))}</td><td>${esc(j(m.hap))}</td><td>${esc(j(m.char))}</td><td>${esc(benTxt(m))}</td><td>${m.status}${m.status==="পরিকল্পিত"?` <button class="sm noprint" onclick="doneForm('${m.id}')">বাস্তবায়ন</button>`:""}</td><td>${esc(m.plan)}</td><td>${esc(m.note)}</td></tr>`).join("")||'<tr><td colspan="11" class="muted">কোনো তথ্য নেই</td></tr>'}</table></div></div>`;
+}
+function filtTxt(){
+  const d=v=>v.split("-").reverse().join("-");
+  const p=[(F.from?d(F.from):tr("শুরু"))+(LANG==="en"?" to ":" থেকে ")+(F.to?d(F.to):tr("আজ পর্যন্ত"))];
+  if(F.s)p.push(tr("স্টাফ")+": "+sName(F.s));
+  [["a","কাজ"],["st","স্ট্যাটাস"],["ar","এরিয়া"],["pj","প্রজেক্ট"],["ch","চর"],["gr","গ্রুপ"],["hb","SED হাব"]].forEach(([k,l])=>{if(F[k])p.push(tr(l)+": "+tr(F[k]))});
+  return p.join(" · ");
+}
+function applyF(){F={from:$("ff").value,to:$("ft").value,s:$("fs").value,a:$("fa").value,st:$("fst").value,ar:$("far").value,pj:$("fpj").value,ch:$("fch").value,gr:$("fgr").value,hb:$("fhb").value};render()}
+function csv(){
+  const q=v=>'"'+String(v||"").replace(/"/g,'""')+'"';
+  const rows=[["তারিখ","স্টাফ","এরিয়া (প্রজেক্ট)","কাজ","গ্রুপ","SED হাব","চর","বেনিফিশিয়ারি","স্ট্যাটাস","পরিকল্পনা","সম্পন্ন নোট"]].concat(filtered().map(m=>[m.date,sName(m.staffId),apTxt(m),j(m.act),j(m.group),j(m.hap),j(m.char),benTxt(m),m.status,m.plan,m.note])).map(r=>r.map(c=>tr(c)));
+  dl(new Blob(["\ufeff"+rows.map(r=>r.map(q).join(",")).join("\n")],{type:"text/csv;charset=utf-8"}),"movement-report.csv");
+}
+if(useFB){
+  db.collection("app").doc("config").onSnapshot(d=>{READY=true;if(d.exists){const c=d.data();["staff","groups","haps","chars","groupChar","hapChar","inputTypes","projects","areas","adminPass"].forEach(k=>{if(c[k]!==undefined)D[k]=c[k]})}refresh()});
+  db.collection("inputs").onSnapshot(q=>{D.inputs=q.docs.map(x=>x.data());refresh()});
+  db.collection("bens").onSnapshot(q=>{D.bens=q.docs.map(x=>x.data());refresh()});
+  db.collection("moves").onSnapshot(q=>{D.moves=q.docs.map(x=>x.data());refresh()});
+}
+new MutationObserver(ms=>{if(LANG!=="en")return;for(const m of ms){if(m.type==="characterData")trTxt(m.target);else m.addedNodes.forEach(trTree)}}).observe(document.body,{childList:true,subtree:true,characterData:true});
+document.documentElement.lang=LANG;if(LANG==="en")document.title="Staff Movement Monitoring - SED Sector";
+trTree(document.body);
+(function(){
+  const sp=$("splash");if(!sp)return;
+  const bar=$("sbar"),pc=$("spc"),st=$("sst"),t0=Date.now();let v=0;
+  const iv=setInterval(()=>{
+    const el=Date.now()-t0,ok=READY||el>6000;
+    const tg=el<2000?el/2000*92:(ok?100:96);
+    v+=(tg-v)*0.2;if(tg-v<0.4)v=tg;
+    bar.style.width=v+"%";pc.textContent=Math.round(v)+"%";
+    st.textContent=v<30?"অ্যাপ চালু হচ্ছে...":v<85?"আগে সেভ করা তথ্য খোলা হচ্ছে...":v<100?"প্রায় শেষ...":"প্রস্তুত!";
+    if(v>=100){clearInterval(iv);setTimeout(()=>{sp.style.opacity=0;setTimeout(()=>sp.remove(),600)},250)}
+  },50);
+})();
+window.addEventListener("online",setSync);window.addEventListener("offline",setSync);
+render();
+</script>
+</body>
+</html>

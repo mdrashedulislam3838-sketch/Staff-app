@@ -180,7 +180,13 @@ const EN={
 "মুভমেন্ট সেভ হয়েছে":"Movement saved","কি কাজ সম্পন্ন হয়েছে তার নোট লিখুন":"Write a note on what work was completed",
 "মুছে ফেলবেন?":"Delete this?","মুছবেন?":"Delete?","আগে থেকেই আছে":"Already exists","নাম ও পিন দিন":"Enter name and PIN",
 "স্টাফ মুছবেন? (তার কাজ থাকবে)":"Delete staff? (their tasks will remain)","পরিবর্তন হয়েছে":"Changed","রিস্টোর হয়েছে":"Restored","ফাইল ঠিক নয়":"Invalid file",
-"গ্রুপ সিলেক্ট করুন":"Select a group","ইনপুটের ধরন সিলেক্ট করুন":"Select an input type","ভিজিট":"Visit","শুরু":"Start","আজ পর্যন্ত":"Today","লগআউট":"Logout","হোম":"Home"
+"গ্রুপ সিলেক্ট করুন":"Select a group","ইনপুটের ধরন সিলেক্ট করুন":"Select an input type","ভিজিট":"Visit","শুরু":"Start","আজ পর্যন্ত":"Today","লগআউট":"Logout","হোম":"Home",
+"ইউজার / সাব এডমিন":"User / Sub Admin","মেইন এডমিন":"Main Admin","সাব এডমিন":"Sub Admin","ইউজার":"User","একাউন্ট":"Accounts",
+"একাউন্ট ও সেটিংস":"Accounts & Settings","সাব এডমিন, ইউজার ও ব্যাকআপ":"Sub admins, users & backup","আপনার ইউজার একাউন্ট ও এক্সেস":"Your user accounts & access",
+"একাউন্ট খুলুন":"Create Account","ইউজার একাউন্ট খুলুন":"Create User Account","একাউন্টের ধরন":"Account type",
+"এক্সেস দিন (কিছু বাছাই না করলে ঐ অংশে কোনো সীমা থাকবে না)":"Give access (if nothing is selected, there is no limit for that part)",
+"আপনার নিজের এক্সেসের বাইরে দেওয়া যাবে না":"You cannot give access beyond your own","এক্সেস":"Access","সব এক্সেস":"Full access",
+"কোনো একাউন্ট নেই":"No accounts","বাতিল":"Cancel","একাউন্ট মুছবেন? (তার কাজ থাকবে)":"Delete account? (their tasks will remain)","চর সিলেক্ট করুন":"Select a char"
 };
 let LANG="bn";try{LANG=localStorage.getItem("lang")||"bn"}catch(e){}
 const BNRE=/[\u0980-\u09FF]/;
@@ -212,8 +218,10 @@ const ACTS=["ট্রেনিং","মিটিং","লেসন লার্
 const KEY="staffMonitorV1";
 let D={staff:[],groups:[],haps:[],chars:[],moves:[],projects:["নারিস","কাদরি"],areas:["চিলমারী","গাইবান্দা"],bens:[],inputs:[],inputTypes:["বীজ","সার","ভার্মি কম্পোস্ট"],groupChar:{},hapChar:{},adminPass:"admin123"};
 if(!useFB){try{const s=localStorage.getItem(KEY);if(s)D=Object.assign(D,JSON.parse(s))}catch(e){}}
-const saveCfg=()=>db.collection("app").doc("config").set({staff:D.staff,groups:D.groups,haps:D.haps,chars:D.chars,groupChar:D.groupChar,hapChar:D.hapChar,inputTypes:D.inputTypes,projects:D.projects,areas:D.areas,adminPass:D.adminPass});
+const saveCfg=()=>db.collection("app").doc("config").set({groups:D.groups,haps:D.haps,chars:D.chars,groupChar:D.groupChar,hapChar:D.hapChar,inputTypes:D.inputTypes,projects:D.projects,areas:D.areas,adminPass:D.adminPass});
 const save=()=>{if(useFB){saveCfg();return}try{localStorage.setItem(KEY,JSON.stringify(D))}catch(e){alert("ডাটা সেভ করা যায়নি")}};
+const saveStaff=a=>{if(useFB)db.collection("staff").doc(a.id).set(a);else save()};
+const delStaffDb=id=>{if(useFB)db.collection("staff").doc(id).delete();else save()};
 const saveMove=m=>{if(useFB)db.collection("moves").doc(m.id).set(m);else save()};
 const saveBen=b=>{if(useFB)db.collection("bens").doc(b.id).set(b);else save()};
 const delBenDb=id=>{if(useFB)db.collection("bens").doc(id).delete();else save()};
@@ -224,7 +232,7 @@ function refresh(){
   if(!me){if(!($("pw")&&$("pw").value)&&!($("sn")&&$("sn").value)&&$("lf"))loginView2();return}
   if(tab==="ben"){if($("bl"))benList();return}
   if(tab==="inp"){const a=document.activeElement;if($("il")&&!(a&&$("il").contains(a)))inputList();return}
-  if(tab==="plan"||tab==="move")return;
+  if(tab==="plan"||tab==="move"||(tab==="staff"&&EDITING))return;
   const a=document.activeElement;if(a&&/INPUT|TEXTAREA|SELECT/.test(a.tagName))return;
   render();
 }
@@ -248,7 +256,7 @@ function render(){
 
 function loginView(){
   $("app").innerHTML=`<div class="card">${ring()}<h3>লগইন</h3>
-  <label>ভূমিকা</label><select id="role" onchange="loginView2()"><option value="staff">স্টাফ</option><option value="admin">এডমিন / ম্যানেজার</option></select>
+  <label>ভূমিকা</label><select id="role" onchange="loginView2()"><option value="acct">ইউজার / সাব এডমিন</option><option value="admin">মেইন এডমিন</option></select>
   <div id="lf"></div></div>
   ${useFB?`<p class="muted">✅ ডাটা অনলাইনে সবার সাথে শেয়ার হচ্ছে। এডমিনের ডিফল্ট পাসওয়ার্ড: admin123 (সেটিংসে বদলান)।</p>`:`<p class="muted">⚠ Firebase সেট করা হয়নি, তাই ডাটা শুধু এই ডিভাইসে সেভ হচ্ছে। এডমিনের ডিফল্ট পাসওয়ার্ড: admin123।</p>`}`;
   loginView2();
@@ -256,7 +264,7 @@ function loginView(){
 function loginView2(){
   const r=$("role").value;
   $("lf").innerHTML=r==="admin"?`<label>পাসওয়ার্ড</label><input id="pw" type="password"><br><br><button onclick="doLogin()">প্রবেশ</button>`
-  :`<label>আপনার নাম</label><select id="sn">${`<option value="">-- সিলেক্ট --</option>`+D.staff.map(s=>`<option value="${s.id}">${esc(s.name)}</option>`).join("")}</select>
+  :`<label>আপনার নাম</label><select id="sn">${`<option value="">-- সিলেক্ট --</option>`+D.staff.map(s=>`<option value="${s.id}">${esc(s.name)}${s.role==="sub"?" ("+tr("সাব এডমিন")+")":""}</option>`).join("")}</select>
   <label>পিন</label><input id="pw" type="password" inputmode="numeric"><br><br><button onclick="doLogin()">প্রবেশ</button>`;
 }
 function doLogin(){
@@ -264,26 +272,48 @@ function doLogin(){
     if($("pw").value===D.adminPass){me={role:"admin"};tab="";render()}else alert("ভুল পাসওয়ার্ড");
   }else{
     const s=D.staff.find(x=>x.id===$("sn").value);
-    if(s&&$("pw").value===s.pin){me={role:"staff",id:s.id,name:s.name};tab="";render()}else alert("নাম বা পিন ভুল");
+    if(s&&$("pw").value===s.pin){me={role:s.role==="sub"?"sub":"user",id:s.id,name:s.name};tab="";render()}else alert("নাম বা পিন ভুল");
   }
 }
 
 /* ---------- Staff ---------- */
-const TL={move:["➕","মুভমেন্ট"],report:["📊","রিপোর্ট"],ben:["🧑‍🌾","বেনিফিশিয়ারি"],inp:["🌱","ইনপুট সাপোর্ট"],areas:["🗺","এরিয়া"],projects:["📁","প্রজেক্ট"],groups:["👥","গ্রুপ"],haps:["📍","SED হাব"],chars:["🏝","চর"],staff:["👤","স্টাফ"],set:["⚙️","সেটিংস"],plan:["➕","নতুন পরিকল্পনা"],my:["📋","আমার কাজ"]};
+const isAdm=()=>!!me&&me.role==="admin",isMgr=()=>!!me&&(me.role==="admin"||me.role==="sub");
+const myAcc=()=>{if(!me||me.role==="admin")return null;const x=D.staff.find(y=>y.id===me.id);return x&&x.access?x.access:null};
+const allow=k=>{const a=myAcc();return a&&a[k]&&a[k].length?a[k]:null};
+const okItem=(k,v)=>{const l=allow(k);return !l||l.includes(v)};
+const optsAllowed=(k,all)=>{const l=allow(k);return l?all.filter(x=>l.includes(x)):all};
+function moveInScope(m){
+  if(!me||me.role==="admin"||m.staffId===me.id)return true;
+  if(me.role!=="sub")return false;
+  const la=allow("areas"),lp=allow("projects"),lc=allow("chars"),ar=toArr(m.ap),ch=toArr(m.char);
+  if(la&&!(ar.length&&ar.every(x=>la.includes(x.a))))return false;
+  if(lp&&!(ar.length&&ar.every(x=>x.p.every(p=>lp.includes(p)))))return false;
+  if(lc&&!(ch.length&&ch.every(c=>lc.includes(c))))return false;
+  return true;
+}
+const okBen=b=>{const l=allow("chars");return !l||(!!benChar(b)&&l.includes(benChar(b)))};
+const myStaff=()=>me.role==="admin"?D.staff:D.staff.filter(x=>x.id===me.id||x.createdBy===me.id);
+const roleTxt=r=>r==="sub"?"সাব এডমিন":"ইউজার";
+const accTxt=a=>{a=a||{};const p=[["এরিয়া","areas"],["প্রজেক্ট","projects"],["চর","chars"]].filter(([l,k])=>a[k]&&a[k].length).map(([l,k])=>tr(l)+": "+a[k].map(tr).join(", "));return p.join(" · ")||tr("সব এক্সেস")};
+const TL={move:["➕","মুভমেন্ট"],report:["📊","রিপোর্ট"],ben:["🧑‍🌾","বেনিফিশিয়ারি"],inp:["🌱","ইনপুট সাপোর্ট"],areas:["🗺","এরিয়া"],projects:["📁","প্রজেক্ট"],groups:["👥","গ্রুপ"],haps:["📍","SED হাব"],chars:["🏝","চর"],staff:["👤","একাউন্ট"],set:["⚙️","সেটিংস"],plan:["➕","নতুন পরিকল্পনা"],my:["📋","আমার কাজ"]};
 const MENU=()=>me.role==="admin"?[
  {t:"মুভমেন্ট ও রিপোর্ট",s:"পরিকল্পনা, বাস্তবায়ন ও রিপোর্ট",c:"indigo",i:"🚶",k:["move","report"]},
  {t:"বেনিফিশিয়ারি ও ইনপুট",s:"বেনিফিশিয়ারি তালিকা ও ইনপুট সাপোর্ট",c:"teal",i:"🌱",k:["ben","inp"]},
  {t:"এরিয়া ও প্রজেক্ট",s:"কাজের এলাকা ও প্রজেক্টের নাম",c:"orange",i:"🗺",k:["areas","projects"]},
  {t:"চর, গ্রুপ ও SED হাব",s:"চর, গ্রুপ ও হাবের তালিকা",c:"blue",i:"🏝",k:["chars","groups","haps"]},
- {t:"স্টাফ ও সেটিংস",s:"স্টাফ, পিন ও ব্যাকআপ",c:"green",i:"⚙️",k:["staff","set"]}
+ {t:"একাউন্ট ও সেটিংস",s:"সাব এডমিন, ইউজার ও ব্যাকআপ",c:"green",i:"⚙️",k:["staff","set"]}
+]:me.role==="sub"?[
+ {t:"মুভমেন্ট ও রিপোর্ট",s:"পরিকল্পনা, বাস্তবায়ন ও রিপোর্ট",c:"indigo",i:"🚶",k:["move","my","report"]},
+ {t:"বেনিফিশিয়ারি ও ইনপুট",s:"বেনিফিশিয়ারি তালিকা ও ইনপুট সাপোর্ট",c:"teal",i:"🌱",k:["ben","inp"]},
+ {t:"একাউন্ট",s:"আপনার ইউজার একাউন্ট ও এক্সেস",c:"green",i:"👤",k:["staff"]}
 ]:[
  {t:"আমার মুভমেন্ট",s:"পরিকল্পনা ও বাস্তবায়ন",c:"indigo",i:"🚶",k:["plan","my"]},
  {t:"বেনিফিশিয়ারি ও ইনপুট",s:"বেনিফিশিয়ারি ও ইনপুট সাপোর্ট",c:"teal",i:"🌱",k:["ben","inp"]}
 ];
 const ring=()=>`<div class="ring">${[0,1,2,3,4,5,6,7].map(i=>`<span style="--i:${i}">F</span>`).join("")}</div>`;
-const go=k=>{tab=k;render()};
+const go=k=>{tab=k;EDITING=null;render()};
 const LO='<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg>';
-const logout=()=>{me=null;tab="";render()};
+const logout=()=>{me=null;tab="";EDITING=null;render()};
 const syncTxt=()=>useFB?(navigator.onLine?"☁️✓ "+tr("আপ টু ডেট"):"📴 "+tr("অফলাইন (নেট এলে জমা হবে)")):"💾 "+tr("লোকাল ডাটা");
 const setSync=()=>{const e=$("sync");if(e)e.innerHTML=syncTxt()};
 function greet(){const h=new Date().getHours();return h<5?"শুভ রাত্রি":h<12?"শুভ সকাল":h<15?"শুভ দুপুর":h<18?"শুভ বিকাল":h<20?"শুভ সন্ধ্যা":"শুভ রাত্রি"}
@@ -292,32 +322,37 @@ function topBar(){
   if(!me)h=`<div class="hero sm">${ring()}<div class="ht" style="justify-content:flex-end">${langBtn()}</div><div class="hm" style="margin-top:10px"><div class="av">🌾</div><div><small>এগ্রিকালচার · SED সেক্টর</small><h2 style="margin:2px 0 0">স্টাফ মুভমেন্ট মনিটরিং</h2></div></div></div>`;
   else if(!tab||tab==="home"){
     const nm=me.role==="admin"?"এডমিন":me.name,ini=me.role==="admin"?"এড":nm.trim().split(/\s+/).map(w=>[...w][0]).slice(0,2).join("");
-    const tm=D.moves.filter(m=>m.date===today()&&(me.role==="admin"||m.staffId===me.id)),pl=tm.filter(m=>m.status==="পরিকল্পিত").length;
+    const tm=D.moves.filter(m=>m.date===today()&&(me.role==="user"?m.staffId===me.id:moveInScope(m))),pl=tm.filter(m=>m.status==="পরিকল্পিত").length;
     let dt="";try{dt=new Date().toLocaleDateString(LANG==="en"?"en-GB":"bn-BD",{day:"numeric",month:"long",year:"numeric"})}catch(e){dt=today()}
     h=`<div class="hero">${ring()}<div class="ht"><span class="chip ok" id="sync">${syncTxt()}</span><div class="rt">${langBtn()}<button class="ico" onclick="logout()" aria-label="লগআউট">${LO}</button></div></div>
-    <div class="hm"><div class="av">${esc(ini)}</div><div><small>${greet()}</small><h2>${esc(nm)}</h2><div class="chips"><span class="chip">${me.role==="admin"?"🛡 এডমিন / ম্যানেজার":"👤 স্টাফ"}</span><span class="chip">📅 ${esc(dt)}</span></div></div></div>
+    <div class="hm"><div class="av">${esc(ini)}</div><div><small>${greet()}</small><h2>${esc(nm)}</h2><div class="chips"><span class="chip">${me.role==="admin"?"🛡 "+tr("মেইন এডমিন"):me.role==="sub"?"🛡 "+tr("সাব এডমিন"):"👤 "+tr("ইউজার")}</span><span class="chip">📅 ${esc(dt)}</span></div></div></div>
     <div class="pc"><div style="font-size:26px">📊</div><div><small>আজকের মুভমেন্ট</small><b>${tr("মোট")} ${tm.length} · ${tr("পরিকল্পিত")} ${pl} · ${tr("বাস্তবায়িত")} ${tm.length-pl}</b></div></div></div>`;
   }else h=`<div class="hero sm">${ring()}<div class="ht"><button class="ico" onclick="go('home')" aria-label="হোম">←</button><b class="pt">${(TL[tab]||["",""]).join(" ")}</b><div class="rt">${langBtn()}<button class="ico" onclick="logout()" aria-label="লগআউট">${LO}</button></div></div></div>`;
   $("top").innerHTML=h;
 }
 function homeView(){
-  $("app").innerHTML=`<div class="sh"><i></i><div><h2>${me.role==="admin"?"ব্যবস্থাপনা ও মনিটরিং":"মাঠের তথ্য এন্ট্রি"}</h2><p>আজ যে কাজ করবেন, সেটি বেছে নিন।</p></div></div>`+MENU().map(g=>`<div class="grp ${g.c}">${ring()}<div class="gh"><div class="ib">${g.i}</div><div><h3>${g.t}</h3><small>${g.s}</small></div><span class="cnt">${g.k.length}</span></div><hr><div class="grid">${g.k.map(k=>`<div class="tile" onclick="go('${k}')"><div class="ti">${TL[k][0]}</div><b>${TL[k][1]}</b></div>`).join("")}</div></div>`).join("");
+  $("app").innerHTML=`<div class="sh"><i></i><div><h2>${isMgr()?"ব্যবস্থাপনা ও মনিটরিং":"মাঠের তথ্য এন্ট্রি"}</h2><p>আজ যে কাজ করবেন, সেটি বেছে নিন।</p></div></div>`+MENU().map(g=>`<div class="grp ${g.c}">${ring()}<div class="gh"><div class="ib">${g.i}</div><div><h3>${g.t}</h3><small>${g.s}</small></div><span class="cnt">${g.k.length}</span></div><hr><div class="grid">${g.k.map(k=>`<div class="tile" onclick="go('${k}')"><div class="ti">${TL[k][0]}</div><b>${TL[k][1]}</b></div>`).join("")}</div></div>`).join("");
 }
 function shell(){$("app").innerHTML='<div id="c"></div>'}
 function staffView(){
   if(tab==="home")return homeView();
   shell();
-  tab==="plan"?planForm():tab==="ben"?benView():tab==="inp"?inpView():myList();
+  if(tab==="plan"||tab==="move")planForm();
+  else if(tab==="ben")benView();
+  else if(tab==="inp")inpView();
+  else if(tab==="report")report();
+  else if(tab==="staff")staffAdm();
+  else myList();
 }
 function planForm(){
   $("c").innerHTML=`<div class="card"><h3>সকালের পরিকল্পনা</h3>
-  ${me.role==="admin"?`<label>স্টাফ</label><select id="ps"><option value="">-- সিলেক্ট --</option>${D.staff.map(s=>`<option value="${s.id}">${esc(s.name)}</option>`).join("")}</select>`:""}
+  ${isMgr()?`<label>স্টাফ</label><select id="ps">${me.role==="admin"?`<option value="">-- সিলেক্ট --</option>`:""}${myStaff().map(s=>`<option value="${s.id}" ${s.id===me.id?"selected":""}>${esc(s.name)}</option>`).join("")}</select>`:""}
   <label>তারিখ</label><input type="date" id="pd" value="${today()}">
   <label>এরিয়া সিলেক্ট করুন (একাধিক)</label>
-  <div class="ck">${D.areas.map((a,i)=>`<label><input type="checkbox" name="ar" value="${i}" onchange="areaChange()">${esc(a)}</label>`).join("")}</div>
+  <div class="ck">${D.areas.map((a,i)=>[a,i]).filter(([a])=>okItem("areas",a)).map(([a,i])=>`<label><input type="checkbox" name="ar" value="${i}" onchange="areaChange()">${esc(a)}</label>`).join("")}</div>
   <div id="ab"></div>
   <label>চর সিলেক্ট করুন (একাধিক)</label>
-  <div class="ck">${[...D.chars.map((c,i)=>[i,c]),["x","চর ছাড়া"]].map(([k,c])=>`<label><input type="checkbox" name="pc" value="${k}" onchange="rebuild()">${esc(c)}</label>`).join("")}</div>
+  <div class="ck">${[...D.chars.map((c,i)=>[i,c]).filter(([i,c])=>okItem("chars",c)),...(allow("chars")?[]:[["x","চর ছাড়া"]])].map(([k,c])=>`<label><input type="checkbox" name="pc" value="${k}" onchange="rebuild()">${esc(c)}</label>`).join("")}</div>
   <div id="gb"></div>
   <label>পরিকল্পনার নোট (ঐচ্ছিক)</label><textarea id="pn" rows="2"></textarea><br>
   <button onclick="addPlan()">পরিকল্পনা সেভ করুন</button></div>`;
@@ -325,11 +360,11 @@ function planForm(){
 let AS={};
 function areaChange(){
   document.querySelectorAll("#ab .ablk").forEach(b=>{AS[b.dataset.i]=pick("pj_"+b.dataset.i)});
-  $("ab").innerHTML=pick("ar").map(i=>`<div class="ablk card" data-i="${i}" style="background:#f6faf5;margin-top:10px"><b>🗺 ${esc(D.areas[i])}</b><label>প্রজেক্ট সিলেক্ট করুন (একাধিক)</label>${chk2("pj_"+i,D.projects,AS[i]||[])}</div>`).join("");
+  $("ab").innerHTML=pick("ar").map(i=>`<div class="ablk card" data-i="${i}" style="background:#f6faf5;margin-top:10px"><b>🗺 ${esc(D.areas[i])}</b><label>প্রজেক্ট সিলেক্ট করুন (একাধিক)</label>${chk2("pj_"+i,optsAllowed("projects",D.projects),AS[i]||[])}</div>`).join("");
 }
 const apTxt=m=>toArr(m.ap).map(x=>tr(x.a)+" ("+x.p.map(tr).join(", ")+")").join(", ");
 function addPlan(){
-  if(me.role==="admin"&&!$("ps").value)return alert("স্টাফ সিলেক্ট করুন");
+  if(isMgr()&&!$("ps").value)return alert("স্টাফ সিলেক্ট করুন");
   const as=pick("ar");if(!as.length)return alert("কমপক্ষে একটি এরিয়া সিলেক্ট করুন");
   const ap=[];for(const i of as){const pj=pick("pj_"+i);if(!pj.length)return alert(tr(D.areas[i])+" "+tr("এর প্রজেক্ট সিলেক্ট করুন"));ap.push({a:D.areas[i],p:pj})}
   const cs=pick("pc");if(!cs.length)return alert("কমপক্ষে একটি চর সিলেক্ট করুন");
@@ -340,10 +375,10 @@ function addPlan(){
     for(const gi of gs){
       const k=c+"_"+gi,a=pick("a_"+k);
       if(!a.length)return alert(tr(cn||"চর ছাড়া")+" / "+tr(gi==="x"?"গ্রুপ ছাড়া":D.groups[gi])+" "+tr("এর কাজের ধরন সিলেক্ট করুন"));
-      out.push({id:uid(),staffId:me.role==="admin"?$("ps").value:me.id,date:$("pd").value,ap:ap,act:a,group:gi==="x"?[]:[D.groups[gi]],hap:a.includes(HUBV)?pick("h_"+k):[],bens:a.includes(BENV)?pick("b_"+k):[],fol:a.includes("ফলোআপ")?pick("f_"+k):[],char:cn?[cn]:[],plan:$("pn").value,status:"পরিকল্পিত",note:""});
+      out.push({id:uid(),staffId:isMgr()?$("ps").value:me.id,date:$("pd").value,ap:ap,act:a,group:gi==="x"?[]:[D.groups[gi]],hap:a.includes(HUBV)?pick("h_"+k):[],bens:a.includes(BENV)?pick("b_"+k):[],fol:a.includes("ফলোআপ")?pick("f_"+k):[],char:cn?[cn]:[],plan:$("pn").value,status:"পরিকল্পিত",note:""});
     }
   }
-  D.moves.push(...out);out.forEach(saveMove);tab=me.role==="admin"?"report":"my";render();alert("মুভমেন্ট সেভ হয়েছে");
+  D.moves.push(...out);out.forEach(saveMove);tab=isMgr()?"report":"my";render();alert("মুভমেন্ট সেভ হয়েছে");
 }
 const HUBV="SED হাব ভিজিট";
 const chk2=(n,arr,on,oc)=>arr.length?`<div class="ck">${arr.map(x=>`<label><input type="checkbox" name="${n}" value="${esc(x)}" ${on.includes(x)?"checked":""} ${oc||""}>${esc(x)}</label>`).join("")}</div>`:'<span class="muted">এডমিন এখনো যোগ করেনি</span>';
@@ -399,30 +434,69 @@ function listAdm(k){
   document.querySelector("#c button").onclick=()=>{const v=$("nv").value.trim();if(!v)return;if(D[k].includes(v))return alert("আগে থেকেই আছে");D[k].push(v);if(MP(k)&&$("gc").value)MP(k)[v]=$("gc").value;save();render()};
 }
 function delItem(k,i){if(confirm("মুছবেন?")){const nm=D[k][i];D[k].splice(i,1);if(MP(k))delete MP(k)[nm];save();render()}}
+let EDITING=null;
 function staffAdm(){
-  $("c").innerHTML=`<div class="card"><h3>স্টাফ যোগ করুন</h3><div class="row"><input id="sn" placeholder="স্টাফের নাম"><input id="sp" placeholder="পিন (লগইনের জন্য)" inputmode="numeric"></div><br><button onclick="addStaff()">যোগ করুন</button></div>
-  <div class="card">${D.staff.length?D.staff.map(s=>`<div class="item"><span>${esc(s.name)} <span class="muted">(${tr("পিন")}: ${esc(s.pin)})</span></span><button class="sm red" onclick="delStaff('${s.id}')">মুছুন</button></div>`).join(""):'<span class="muted">কোনো স্টাফ নেই</span>'}</div>`;
+  if(EDITING)return accEditView();
+  const mine=me.role==="admin"?D.staff:D.staff.filter(x=>x.createdBy===me.id);
+  const AA=optsAllowed("areas",D.areas),PP=optsAllowed("projects",D.projects),CC=optsAllowed("chars",D.chars);
+  const lim=me.role==="sub"&&(allow("areas")||allow("projects")||allow("chars"));
+  $("c").innerHTML=`<div class="card"><h3>${me.role==="admin"?"একাউন্ট খুলুন":"ইউজার একাউন্ট খুলুন"}</h3>
+  <div class="row"><input id="sn" placeholder="নাম"><input id="sp" placeholder="পিন (লগইনের জন্য)" inputmode="numeric"></div>
+  ${me.role==="admin"?`<label>একাউন্টের ধরন</label><select id="sr"><option value="user">ইউজার</option><option value="sub">সাব এডমিন</option></select>`:""}
+  <p class="muted" style="margin:12px 0 0">এক্সেস দিন (কিছু বাছাই না করলে ঐ অংশে কোনো সীমা থাকবে না)</p>
+  ${lim?`<p class="muted" style="margin:4px 0 0">আপনার নিজের এক্সেসের বাইরে দেওয়া যাবে না</p>`:""}
+  <label>এরিয়া</label>${chk2("xa",AA,[])}
+  <label>প্রজেক্ট</label>${chk2("xp",PP,[])}
+  <label>চর</label>${chk2("xc",CC,[])}
+  <br><button onclick="addStaff()">যোগ করুন</button></div>
+  <div class="card">${mine.length?mine.map(x=>`<div class="item"><div><b>${esc(x.name)}</b> <span class="badge ${x.role==="sub"?"p":"d"}">${tr(roleTxt(x.role))}</span> <span class="muted">(${tr("পিন")}: ${esc(x.pin)})</span><div class="muted">${esc(accTxt(x.access))}</div></div><div><button class="sm sec" onclick="accEdit('${x.id}')">এক্সেস</button> <button class="sm red" onclick="delStaff('${x.id}')">মুছুন</button></div></div>`).join(""):'<span class="muted">কোনো একাউন্ট নেই</span>'}</div>`;
 }
-function addStaff(){const n=$("sn").value.trim(),p=$("sp").value.trim();if(!n||!p)return alert("নাম ও পিন দিন");D.staff.push({id:uid(),name:n,pin:p});save();render()}
-function delStaff(id){if(confirm("স্টাফ মুছবেন? (তার কাজ থাকবে)")){D.staff=D.staff.filter(s=>s.id!==id);save();render()}}
+function accEditView(){
+  const x=D.staff.find(y=>y.id===EDITING);if(!x){EDITING=null;return staffAdm()}
+  const a=x.access||{};
+  $("c").innerHTML=`<div class="card"><h3>${esc(x.name)} — ${tr("এক্সেস")}</h3>
+  <p class="muted" style="margin:0">এক্সেস দিন (কিছু বাছাই না করলে ঐ অংশে কোনো সীমা থাকবে না)</p>
+  <label>এরিয়া</label>${chk2("xa",optsAllowed("areas",D.areas),toArr(a.areas))}
+  <label>প্রজেক্ট</label>${chk2("xp",optsAllowed("projects",D.projects),toArr(a.projects))}
+  <label>চর</label>${chk2("xc",optsAllowed("chars",D.chars),toArr(a.chars))}
+  <br><button onclick="saveAcc()">সেভ</button> <button class="sec" onclick="EDITING=null;render()">বাতিল</button></div>`;
+}
+function readAcc(){
+  const g=(n,k)=>{let v=pick(n);const l=allow(k);if(l&&!v.length)v=[...l];return v};
+  return {areas:g("xa","areas"),projects:g("xp","projects"),chars:g("xc","chars")};
+}
+function addStaff(){
+  const n=$("sn").value.trim(),p=$("sp").value.trim();
+  if(!n||!p)return alert("নাম ও পিন দিন");
+  if(D.staff.some(x=>x.name.trim().toLowerCase()===n.toLowerCase()))return alert("আগে থেকেই আছে");
+  const x={id:uid(),name:n,pin:p,role:me.role==="admin"&&$("sr").value==="sub"?"sub":"user",access:readAcc(),createdBy:me.role==="admin"?"admin":me.id};
+  D.staff.push(x);saveStaff(x);render();
+}
+function accEdit(id){EDITING=id;render()}
+function saveAcc(){const x=D.staff.find(y=>y.id===EDITING);if(!x)return;x.access=readAcc();saveStaff(x);EDITING=null;render()}
+function delStaff(id){
+  const x=D.staff.find(y=>y.id===id);if(!x)return;
+  if(me.role!=="admin"&&x.createdBy!==me.id)return;
+  if(confirm("একাউন্ট মুছবেন? (তার কাজ থাকবে)")){D.staff=D.staff.filter(y=>y.id!==id);delStaffDb(id);render()}
+}
 function settings(){
   $("c").innerHTML=`<div class="card"><h3>এডমিন পাসওয়ার্ড বদলান</h3><input id="np" type="text" placeholder="নতুন পাসওয়ার্ড"><br><br><button onclick="if($('np').value){D.adminPass=$('np').value;save();alert('পরিবর্তন হয়েছে')}">সেভ</button></div>
   <div class="card"><h3>ব্যাকআপ</h3><button class="sec" onclick="backup()">ডাটা ডাউনলোড (JSON)</button> <button class="sec" onclick="$('rf').click()">ডাটা রিস্টোর</button><input type="file" id="rf" class="hide" accept=".json" onchange="restore(this)"></div>`;
 }
 function backup(){dl(new Blob([JSON.stringify(D)],{type:"application/json"}),"backup.json")}
-function restore(i){const r=new FileReader();r.onload=()=>{try{D=Object.assign(D,JSON.parse(r.result));save();if(useFB)D.moves.forEach(saveMove);if(useFB){D.bens.forEach(saveBen);D.inputs.forEach(saveInp)}alert("রিস্টোর হয়েছে");render()}catch(e){alert("ফাইল ঠিক নয়")}};r.readAsText(i.files[0])}
+function restore(i){const r=new FileReader();r.onload=()=>{try{D=Object.assign(D,JSON.parse(r.result));save();if(useFB)D.moves.forEach(saveMove);if(useFB){D.bens.forEach(saveBen);D.inputs.forEach(saveInp);D.staff.forEach(saveStaff)}alert("রিস্টোর হয়েছে");render()}catch(e){alert("ফাইল ঠিক নয়")}};r.readAsText(i.files[0])}
 function dl(b,n){const a=document.createElement("a");a.href=URL.createObjectURL(b);a.download=n;a.click()}
 
 /* ---------- Beneficiary ---------- */
 const BENV="বেনিফিশিয়ারি ভিজিট";
 const benChar=b=>b.char||D.groupChar[b.group]||"";
-const cOpts=ph=>`<option value="">${ph}</option>`+D.chars.map(c=>`<option value="${esc(c)}">${esc(c)}</option>`).join("");
-const gOpts=(cn,ph)=>`<option value="">${ph}</option>`+D.groups.filter(g=>{const m=D.groupChar[g];return !cn||!m||m===cn}).map(g=>`<option value="${esc(g)}">${esc(g)}${D.groupChar[g]&&!cn?" ("+tr("চর")+": "+esc(tr(D.groupChar[g]))+")":""}</option>`).join("");
-const benFor=(c,gi)=>gi==="x"?[]:D.bens.filter(b=>b.group===D.groups[gi]&&(c==="x"||!benChar(b)||benChar(b)===D.chars[c]));
+const cOpts=ph=>`<option value="">${ph}</option>`+optsAllowed("chars",D.chars).map(c=>`<option value="${esc(c)}">${esc(c)}</option>`).join("");
+const gOpts=(cn,ph)=>`<option value="">${ph}</option>`+D.groups.filter(g=>{const m=D.groupChar[g];if(cn)return !m||m===cn;const l=allow("chars");return !l||!m||l.includes(m)}).map(g=>`<option value="${esc(g)}">${esc(g)}${D.groupChar[g]&&!cn?" ("+tr("চর")+": "+esc(tr(D.groupChar[g]))+")":""}</option>`).join("");
+const benFor=(c,gi)=>gi==="x"?[]:D.bens.filter(b=>b.group===D.groups[gi]&&(c==="x"||!benChar(b)||benChar(b)===D.chars[c])&&okBen(b));
 const chkId=(n,items,on,hint)=>items.length?`<div class="ck">${items.map(([id,t])=>`<label><input type="checkbox" name="${n}" value="${id}" ${on.includes(id)?"checked":""}>${esc(t)}</label>`).join("")}</div>`:`<span class="muted">${hint}</span>`;
 const bn=ids=>toArr(ids).map(id=>(D.bens.find(b=>b.id===id)||{}).name).filter(Boolean).join(", ");
 const benTxt=m=>[bn(m.bens)&&tr("ভিজিট")+": "+bn(m.bens),bn(m.fol)&&tr("ফলোআপ")+": "+bn(m.fol)].filter(Boolean).join(" | ");
-const benFilter=(cf,gf)=>D.bens.filter(b=>(!cf||benChar(b)===cf)&&(!gf||b.group===gf)).sort((a,b)=>a.group.localeCompare(b.group)||a.name.localeCompare(b.name));
+const benFilter=(cf,gf)=>D.bens.filter(b=>(!cf||benChar(b)===cf)&&(!gf||b.group===gf)&&okBen(b)).sort((a,b)=>a.group.localeCompare(b.group)||a.name.localeCompare(b.name));
 function benView(){
   $("c").innerHTML=`<div class="card"><h3>নতুন বেনিফিশিয়ারি যোগ করুন</h3>
   <label>চর</label><select id="bc" onchange="$('bg').innerHTML=gOpts(this.value,'-- গ্রুপ সিলেক্ট করুন --')">${cOpts("-- চর সিলেক্ট করুন --")}</select>
@@ -440,13 +514,14 @@ function addBen(){
   const g=$("bg").value,n=$("bn").value.trim();
   if(!g)return alert("গ্রুপ সিলেক্ট করুন");
   if(!n)return alert("নাম লিখুন");
-  const b={id:uid(),char:$("bc").value||D.groupChar[g]||"",group:g,name:n,father:$("bf").value.trim(),mobile:$("bm").value.trim(),nid:$("bi").value.trim()};
+  const ch=$("bc").value||D.groupChar[g]||"";if(allow("chars")&&!ch)return alert("চর সিলেক্ট করুন");
+  const b={id:uid(),char:ch,group:g,name:n,father:$("bf").value.trim(),mobile:$("bm").value.trim(),nid:$("bi").value.trim()};
   D.bens.push(b);saveBen(b);
   ["bn","bf","bm","bi"].forEach(i=>$(i).value="");$("bn").focus();benList();
 }
 function benList(){
   const l=benFilter($("bcf")?$("bcf").value:"",$("bfl")?$("bfl").value:"");
-  $("bl").innerHTML=`<p class="muted">${tr("মোট")}: ${l.length}${LANG==="en"?"":" জন"}</p>`+(l.map(b=>`<div class="item"><div><b>${esc(b.name)}</b> <span class="muted">(${esc(tr(benChar(b)||"চর নেই"))} · ${esc(b.group)})</span><div class="muted">${LANG==="en"?"Father":"পিতা"}: ${esc(b.father||"-")} · ${tr("মোবাইল")}: ${esc(b.mobile||"-")} · NID: ${esc(b.nid||"-")}</div></div>${me.role==="admin"?`<button class="sm red" onclick="delBen('${b.id}')">মুছুন</button>`:""}</div>`).join("")||'<span class="muted">কোনো বেনিফিশিয়ারি নেই</span>');
+  $("bl").innerHTML=`<p class="muted">${tr("মোট")}: ${l.length}${LANG==="en"?"":" জন"}</p>`+(l.map(b=>`<div class="item"><div><b>${esc(b.name)}</b> <span class="muted">(${esc(tr(benChar(b)||"চর নেই"))} · ${esc(b.group)})</span><div class="muted">${LANG==="en"?"Father":"পিতা"}: ${esc(b.father||"-")} · ${tr("মোবাইল")}: ${esc(b.mobile||"-")} · NID: ${esc(b.nid||"-")}</div></div>${isMgr()?`<button class="sm red" onclick="delBen('${b.id}')">মুছুন</button>`:""}</div>`).join("")||'<span class="muted">কোনো বেনিফিশিয়ারি নেই</span>');
 }
 function delBen(id){if(confirm("মুছবেন?")){D.bens=D.bens.filter(b=>b.id!==id);delBenDb(id);benList()}}
 
@@ -462,7 +537,7 @@ function inputList(){
   const l=benFilter($("icf")?$("icf").value:"",$("igf")?$("igf").value:"");
   $("il").innerHTML=l.map(b=>{const ins=D.inputs.filter(i=>i.benId===b.id);
     return `<div class="card"><b>${esc(b.name)}</b> <span class="muted">(${esc(tr(benChar(b)||"চর নেই"))} · ${esc(b.group)})</span>
-    <div style="margin:6px 0">${ins.map(i=>`<span class="badge d" style="display:inline-block;margin:2px">${esc(tr(i.type))}${i.qty?": "+esc(i.qty):""} · ${esc(i.date)}${me.role==="admin"?` <a onclick="delInp('${i.id}')" style="cursor:pointer">✕</a>`:""}</span>`).join("")||'<span class="muted">কোনো ইনপুট সাপোর্ট নেই</span>'}</div>
+    <div style="margin:6px 0">${ins.map(i=>`<span class="badge d" style="display:inline-block;margin:2px">${esc(tr(i.type))}${i.qty?": "+esc(i.qty):""} · ${esc(i.date)}${isMgr()?` <a onclick="delInp('${i.id}')" style="cursor:pointer">✕</a>`:""}</span>`).join("")||'<span class="muted">কোনো ইনপুট সাপোর্ট নেই</span>'}</div>
     <div class="row"><select id="it_${b.id}">${opts(D.inputTypes,"","-- ইনপুট --")}</select><input id="iq_${b.id}" placeholder="পরিমাণ (যেমন ৫ কেজি)"><button style="flex:0" onclick="addInp('${b.id}')">যোগ</button></div></div>`}).join("")||'<div class="card muted">কোনো বেনিফিশিয়ারি নেই। আগে বেনিফিশিয়ারি ট্যাবে যোগ করুন।</div>';
 }
 function addInp(id){
@@ -474,18 +549,18 @@ function delInp(id){if(confirm("মুছবেন?")){D.inputs=D.inputs.filter(
 
 /* ---------- Report ---------- */
 function filtered(){
-  return D.moves.filter(m=>(!F.from||m.date>=F.from)&&(!F.to||m.date<=F.to)&&(!F.s||m.staffId===F.s)&&(!F.a||toArr(m.act).includes(F.a))&&(!F.st||m.status===F.st)&&(!F.ar||toArr(m.ap).some(x=>x.a===F.ar))&&(!F.pj||toArr(m.ap).some(x=>x.p.includes(F.pj)))&&(!F.ch||toArr(m.char).includes(F.ch))&&(!F.gr||toArr(m.group).includes(F.gr))&&(!F.hb||toArr(m.hap).includes(F.hb))).sort((a,b)=>b.date.localeCompare(a.date));
+  return D.moves.filter(m=>moveInScope(m)&&(!F.from||m.date>=F.from)&&(!F.to||m.date<=F.to)&&(!F.s||m.staffId===F.s)&&(!F.a||toArr(m.act).includes(F.a))&&(!F.st||m.status===F.st)&&(!F.ar||toArr(m.ap).some(x=>x.a===F.ar))&&(!F.pj||toArr(m.ap).some(x=>x.p.includes(F.pj)))&&(!F.ch||toArr(m.char).includes(F.ch))&&(!F.gr||toArr(m.group).includes(F.gr))&&(!F.hb||toArr(m.hap).includes(F.hb))).sort((a,b)=>b.date.localeCompare(a.date));
 }
 function report(){
   const l=filtered(),pl=l.filter(m=>m.status==="পরিকল্পিত").length,dn=l.length-pl;
   $("c").innerHTML=`<div class="card noprint"><div class="row">
   <div><label>থেকে</label><input type="date" id="ff" onchange="applyF()" value="${F.from||""}"></div>
   <div><label>পর্যন্ত</label><input type="date" id="ft" onchange="applyF()" value="${F.to||""}"></div>
-  <div><label>স্টাফ</label><select id="fs" onchange="applyF()"><option value="">সবাই</option>${D.staff.map(s=>`<option value="${s.id}" ${F.s===s.id?"selected":""}>${esc(s.name)}</option>`).join("")}</select></div>
+  <div><label>স্টাফ</label><select id="fs" onchange="applyF()"><option value="">সবাই</option>${myStaff().map(s=>`<option value="${s.id}" ${F.s===s.id?"selected":""}>${esc(s.name)}</option>`).join("")}</select></div>
   <div><label>কাজ</label><select id="fa" onchange="applyF()">${opts(ACTS,F.a,"সব")}</select></div>
   <div><label>স্ট্যাটাস</label><select id="fst" onchange="applyF()">${opts(["পরিকল্পিত","বাস্তবায়িত"],F.st,"সব")}</select></div>
-  <div><label>এরিয়া</label><select id="far" onchange="applyF()">${opts(D.areas,F.ar,"সব")}</select></div><div><label>প্রজেক্ট</label><select id="fpj" onchange="applyF()">${opts(D.projects,F.pj,"সব")}</select></div>
-  <div><label>চর</label><select id="fch" onchange="applyF()">${opts(D.chars,F.ch,"সব")}</select></div><div><label>গ্রুপ</label><select id="fgr" onchange="applyF()">${opts(D.groups,F.gr,"সব")}</select></div><div><label>SED হাব</label><select id="fhb" onchange="applyF()">${opts(D.haps,F.hb,"সব")}</select></div></div><br>
+  <div><label>এরিয়া</label><select id="far" onchange="applyF()">${opts(optsAllowed("areas",D.areas),F.ar,"সব")}</select></div><div><label>প্রজেক্ট</label><select id="fpj" onchange="applyF()">${opts(optsAllowed("projects",D.projects),F.pj,"সব")}</select></div>
+  <div><label>চর</label><select id="fch" onchange="applyF()">${opts(optsAllowed("chars",D.chars),F.ch,"সব")}</select></div><div><label>গ্রুপ</label><select id="fgr" onchange="applyF()">${opts(D.groups,F.gr,"সব")}</select></div><div><label>SED হাব</label><select id="fhb" onchange="applyF()">${opts(D.haps,F.hb,"সব")}</select></div></div><br>
   <button onclick="applyF()">ফিল্টার</button> <button class="sec" onclick="F={};render()">রিসেট</button>
   <button class="sec" onclick="csv()">⬇ Excel/CSV</button> <button class="sec" onclick="window.print()">⬇ PDF</button>
   <div class="muted">PDF: প্রিন্ট উইন্ডোতে "Save as PDF" সিলেক্ট করুন</div></div>
@@ -509,7 +584,8 @@ function csv(){
   dl(new Blob(["\ufeff"+rows.map(r=>r.map(q).join(",")).join("\n")],{type:"text/csv;charset=utf-8"}),"movement-report.csv");
 }
 if(useFB){
-  db.collection("app").doc("config").onSnapshot(d=>{READY=true;if(d.exists){const c=d.data();["staff","groups","haps","chars","groupChar","hapChar","inputTypes","projects","areas","adminPass"].forEach(k=>{if(c[k]!==undefined)D[k]=c[k]})}refresh()});
+  db.collection("app").doc("config").onSnapshot(d=>{READY=true;if(d.exists){const c=d.data();["groups","haps","chars","groupChar","hapChar","inputTypes","projects","areas","adminPass"].forEach(k=>{if(c[k]!==undefined)D[k]=c[k]})}refresh()});
+  db.collection("staff").onSnapshot(q=>{D.staff=q.docs.map(x=>x.data());refresh()});
   db.collection("inputs").onSnapshot(q=>{D.inputs=q.docs.map(x=>x.data());refresh()});
   db.collection("bens").onSnapshot(q=>{D.bens=q.docs.map(x=>x.data());refresh()});
   db.collection("moves").onSnapshot(q=>{D.moves=q.docs.map(x=>x.data());refresh()});

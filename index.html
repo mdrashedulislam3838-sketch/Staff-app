@@ -3,6 +3,10 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#2a3f94">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" type="image/png" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
 <title>স্টাফ মুভমেন্ট মনিটরিং - SED সেক্টর</title>
 <style>
 *{box-sizing:border-box}
@@ -772,6 +776,7 @@ trTree(document.body);
     if(v>=100){clearInterval(iv);setTimeout(()=>{sp.style.opacity=0;setTimeout(()=>sp.remove(),600)},250)}
   },50);
 })();
+if("serviceWorker" in navigator&&location.protocol==="https:"){window.addEventListener("load",()=>navigator.serviceWorker.register("sw.js").catch(()=>{}))}
 window.addEventListener("online",setSync);window.addEventListener("offline",setSync);
 render();
 </script>

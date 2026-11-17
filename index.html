@@ -102,6 +102,9 @@ th,td{border:1px solid #d1d5db;padding:6px;text-align:left;vertical-align:top}th
 .lang button{background:transparent;color:#fff;padding:7px 14px;border-radius:999px;font-weight:700;font-size:13px;border:0}
 .lang button.on{background:#fff;color:#2a3f94}
 .pt{font-size:16px}
+.lnk{color:#2a5ab0;font-weight:700;text-decoration:underline}
+.call{display:inline-flex;align-items:center;gap:4px;padding:6px 12px;border-radius:999px;background:#e8f6ee;color:#1f7a45;font-weight:700;font-size:13px;text-decoration:none;border:1px solid #bfe3cd}
+.acts{display:flex;gap:6px;align-items:center;flex-wrap:wrap;justify-content:flex-end}
 </style>
 </head>
 <body>
@@ -118,14 +121,16 @@ th,td{border:1px solid #d1d5db;padding:6px;text-align:left;vertical-align:top}th
 
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script>
 /* ===== Firebase কনফিগ: Firebase Console থেকে কপি করে এখানে বসান ===== */
 const FB_CONFIG={apiKey:"AIzaSyAif6LOUgknJkYII9IJW5lsyUI1wtqJvw8",authDomain:"staff-monitoring-sed-bfda7.firebaseapp.com",projectId:"staff-monitoring-sed-bfda7",storageBucket:"staff-monitoring-sed-bfda7.firebasestorage.app",messagingSenderId:"709379452362",appId:"1:709379452362:web:24777773784b79cd3ab333"};
 /* ============================================================== */
 const useFB=typeof firebase!=="undefined"&&!!FB_CONFIG.apiKey&&!FB_CONFIG.apiKey.startsWith("YOUR");
-let db=null;
-let READY=!useFB;
-if(useFB){firebase.initializeApp(FB_CONFIG);db=firebase.firestore();db.enablePersistence({synchronizeTabs:true}).catch(()=>{});}
+const ADMIN_EMAIL="mdrashedulislam3838@gmail.com";
+let db=null,auth=null,AUTHU=null,AUTH_READY=!useFB,DATA_READY=false,UNSUBS=[],RDYN={},READY=!useFB;
+const chkReady=()=>{READY=AUTH_READY&&(!AUTHU||DATA_READY)};
+if(useFB){firebase.initializeApp(FB_CONFIG);db=firebase.firestore();auth=firebase.auth();db.enablePersistence({synchronizeTabs:true}).catch(()=>{});}
 const EN={
 "এডমিন":"Admin","এড":"AD","স্টাফ":"Staff","লগইন":"Login","ভূমিকা":"Role","এডমিন / ম্যানেজার":"Admin / Manager",
 "পাসওয়ার্ড":"Password","প্রবেশ":"Enter","আপনার নাম":"Your name","পিন":"PIN","-- সিলেক্ট --":"-- Select --",
@@ -180,7 +185,28 @@ const EN={
 "মুভমেন্ট সেভ হয়েছে":"Movement saved","কি কাজ সম্পন্ন হয়েছে তার নোট লিখুন":"Write a note on what work was completed",
 "মুছে ফেলবেন?":"Delete this?","মুছবেন?":"Delete?","আগে থেকেই আছে":"Already exists","নাম ও পিন দিন":"Enter name and PIN",
 "স্টাফ মুছবেন? (তার কাজ থাকবে)":"Delete staff? (their tasks will remain)","পরিবর্তন হয়েছে":"Changed","রিস্টোর হয়েছে":"Restored","ফাইল ঠিক নয়":"Invalid file",
-"গ্রুপ সিলেক্ট করুন":"Select a group","ইনপুটের ধরন সিলেক্ট করুন":"Select an input type","ভিজিট":"Visit","শুরু":"Start","আজ পর্যন্ত":"Today","লগআউট":"Logout","হোম":"Home",
+"গ্রুপ সিলেক্ট করুন":"Select a group","ইনপুটের ধরন সিলেক্ট করুন":"Select an input type","ভিজিট":"Visit","শুরু":"Start","আজ পর্যন্ত":"Today","লগআউট":"Logout","হোম":"Home","ইমেইল":"Email","পাসওয়ার্ড":"Password","পাসওয়ার্ড (কমপক্ষে ৬ অক্ষর)":"Password (at least 6 characters)","পাসওয়ার্ড আবার দিন":"Re-enter password",
+"পাসওয়ার্ড ভুলে গেছেন?":"Forgot password?","মেইন এডমিন প্রথমবার?":"First time as main admin?","একাউন্ট তৈরি করুন":"Create account",
+"মেইন এডমিন একাউন্ট তৈরি":"Create Main Admin Account","ইমেইল ও পাসওয়ার্ড দিন":"Enter email and password","প্রবেশ করা হচ্ছে...":"Signing in...",
+"ইমেইল ভেরিফাই করা হয়নি। ইনবক্স বা স্প্যাম ফোল্ডারে ভেরিফিকেশন লিংক দেখুন।":"Email not verified. Check your inbox or spam folder for the verification link.",
+"ভেরিফিকেশন ইমেইল আবার পাঠান":"Resend verification email","ভেরিফিকেশন ইমেইল পাঠানো হয়েছে":"Verification email sent",
+"পাসওয়ার্ড রিসেট ইমেইল পাঠানো হয়েছে":"Password reset email sent","আগে ইমেইল লিখুন":"Enter your email first","একাউন্ট তৈরি হচ্ছে...":"Creating account...",
+"দুটি পাসওয়ার্ড মেলেনি":"Passwords do not match",
+"ভেরিফিকেশন ইমেইল পাঠানো হয়েছে। ইমেইলের লিংকে চাপ দিয়ে ভেরিফাই করে তারপর লগইন করুন।":"Verification email sent. Tap the link in the email to verify, then log in.",
+"এই ইমেইলে আগেই একাউন্ট আছে। লগইন করুন, বা পাসওয়ার্ড ভুলে গেলে রিসেট করুন।":"An account already exists for this email. Log in, or reset your password if you forgot it.",
+"আপনার একাউন্ট চালু নেই। এডমিনের সাথে যোগাযোগ করুন।":"Your account is not active. Contact the admin.",
+"ইমেইল বা পাসওয়ার্ড ভুল":"Wrong email or password","অনেকবার চেষ্টা হয়েছে, কিছুক্ষণ পরে আবার চেষ্টা করুন":"Too many attempts, try again later",
+"ইন্টারনেট সংযোগ নেই":"No internet connection","এই ইমেইল আগে থেকেই ব্যবহৃত":"This email is already in use","পাসওয়ার্ড কমপক্ষে ৬ অক্ষরের হতে হবে":"Password must be at least 6 characters",
+"ইমেইল ঠিক নয়":"Invalid email","Firebase-এ Email/Password চালু করা হয়নি":"Email/Password is not enabled in Firebase","অনুমতি নেই":"Permission denied",
+"ডেমো মোড (Firebase সংযুক্ত নয়)":"Demo mode (Firebase not connected)","নাম, ইমেইল ও পাসওয়ার্ড দিন":"Enter name, email and password","এই ইমেইল মেইন এডমিনের":"This email belongs to the main admin",
+"একাউন্ট খোলা হয়েছে। ভেরিফিকেশন ইমেইল পাঠানো হয়েছে":"Account created. Verification email sent",
+"ঐ ইমেইলে একটা ভেরিফিকেশন লিংক যাবে। লিংকে চাপ না দেওয়া পর্যন্ত লগইন করা যাবে না।":"A verification link will be sent to that email. Login is not possible until the link is tapped.",
+"পাসওয়ার্ড রিসেট":"Reset password","আমার পাসওয়ার্ড":"My password","পাসওয়ার্ড রিসেট ইমেইল পাঠান":"Send password reset email",
+"স্টাফ (একাধিক)":"Staff (multiple)","এরিয়া (একাধিক)":"Area(s) (multiple)","ডেজিগনেশন":"Designation","ফোন নম্বর":"Phone number","স্টাফ যোগ করুন":"Add Staff","স্টাফ সম্পাদনা":"Edit Staff",
+"সম্পাদনা":"Edit","কোনো স্টাফ নেই":"No staff","স্টাফ মুছবেন? (তার মুভমেন্ট থাকবে)":"Delete staff? (their movements will remain)","আপনার এক্সেসে কোনো স্টাফ নেই":"No staff in your access",
+"কোনো স্টাফ যোগ করা হয়নি":"No staff added yet","স্টাফ, একাউন্ট ও সেটিংস":"Staff, Accounts & Settings","স্টাফ তালিকা, লগইন একাউন্ট ও ব্যাকআপ":"Staff list, login accounts & backup",
+"সেভ হয়নি":"Not saved","মোছা যায়নি":"Could not delete",
+"কল":"Call","লোড হচ্ছে...":"Loading...","লোড হচ্ছে":"Loading",
 "ইউজার / সাব এডমিন":"User / Sub Admin","মেইন এডমিন":"Main Admin","সাব এডমিন":"Sub Admin","ইউজার":"User","একাউন্ট":"Accounts",
 "একাউন্ট ও সেটিংস":"Accounts & Settings","সাব এডমিন, ইউজার ও ব্যাকআপ":"Sub admins, users & backup","আপনার ইউজার একাউন্ট ও এক্সেস":"Your user accounts & access",
 "একাউন্ট খুলুন":"Create Account","ইউজার একাউন্ট খুলুন":"Create User Account","একাউন্টের ধরন":"Account type",
@@ -216,23 +242,20 @@ function trTree(r){
 }
 const ACTS=["ট্রেনিং","মিটিং","লেসন লার্নিং","বেনিফিশিয়ারি ভিজিট","ফলোআপ","SED হাব ভিজিট"];
 const KEY="staffMonitorV1";
-let D={staff:[],groups:[],haps:[],chars:[],moves:[],projects:["নারিস","কাদরি"],areas:["চিলমারী","গাইবান্দা"],bens:[],inputs:[],inputTypes:["বীজ","সার","ভার্মি কম্পোস্ট"],groupChar:{},hapChar:{},adminPass:"admin123"};
+let D={accounts:[],people:[],groups:[],haps:[],chars:[],moves:[],projects:["নারিস","কাদরি"],areas:["চিলমারী","গাইবান্দা"],bens:[],inputs:[],inputTypes:["বীজ","সার","ভার্মি কম্পোস্ট"],groupChar:{},hapChar:{}};
 if(!useFB){try{const s=localStorage.getItem(KEY);if(s)D=Object.assign(D,JSON.parse(s))}catch(e){}}
-const saveCfg=()=>db.collection("app").doc("config").set({groups:D.groups,haps:D.haps,chars:D.chars,groupChar:D.groupChar,hapChar:D.hapChar,inputTypes:D.inputTypes,projects:D.projects,areas:D.areas,adminPass:D.adminPass});
+const saveCfg=()=>db.collection("app").doc("config").set({groups:D.groups,haps:D.haps,chars:D.chars,groupChar:D.groupChar,hapChar:D.hapChar,inputTypes:D.inputTypes,projects:D.projects,areas:D.areas}).catch(e=>alert("সেভ হয়নি: "+(e.code||e.message)));
 const save=()=>{if(useFB){saveCfg();return}try{localStorage.setItem(KEY,JSON.stringify(D))}catch(e){alert("ডাটা সেভ করা যায়নি")}};
-const saveStaff=a=>{if(useFB)db.collection("staff").doc(a.id).set(a);else save()};
-const delStaffDb=id=>{if(useFB)db.collection("staff").doc(id).delete();else save()};
-const saveMove=m=>{if(useFB)db.collection("moves").doc(m.id).set(m);else save()};
-const saveBen=b=>{if(useFB)db.collection("bens").doc(b.id).set(b);else save()};
-const delBenDb=id=>{if(useFB)db.collection("bens").doc(id).delete();else save()};
-const saveInp=i=>{if(useFB)db.collection("inputs").doc(i.id).set(i);else save()};
-const delInpDb=id=>{if(useFB)db.collection("inputs").doc(id).delete();else save()};
-const delMoveDb=id=>{if(useFB)db.collection("moves").doc(id).delete();else save()};
+const COL={moves:"moves_v2",bens:"bens_v2",inputs:"inputs_v2",people:"people",accounts:"accounts"};
+const fsSave=(c,o)=>{if(useFB)return db.collection(COL[c]).doc(o.id).set(o).catch(e=>alert("সেভ হয়নি: "+(e.code||e.message)));save()};
+const fsDel=(c,id)=>{if(useFB)return db.collection(COL[c]).doc(id).delete().catch(e=>alert("মোছা যায়নি: "+(e.code||e.message)));save()};
+const saveMove=m=>fsSave("moves",m),delMoveDb=id=>fsDel("moves",id),saveBen=b=>fsSave("bens",b),delBenDb=id=>fsDel("bens",id),saveInp=i=>fsSave("inputs",i),delInpDb=id=>fsDel("inputs",id);
+const savePerson=x=>fsSave("people",x),delPersonDb=id=>fsDel("people",id),saveAccount=x=>fsSave("accounts",x),delAccountDb=id=>fsDel("accounts",id);
 function refresh(){
-  if(!me){if(!($("pw")&&$("pw").value)&&!($("sn")&&$("sn").value)&&$("lf"))loginView2();return}
+  if(!me)return;
   if(tab==="ben"){if($("bl"))benList();return}
   if(tab==="inp"){const a=document.activeElement;if($("il")&&!(a&&$("il").contains(a)))inputList();return}
-  if(tab==="plan"||tab==="move"||(tab==="staff"&&EDITING))return;
+  if(tab==="plan"||tab==="move"||((tab==="accounts"&&EDITING)||(tab==="people"&&EDITP)))return;
   const a=document.activeElement;if(a&&/INPUT|TEXTAREA|SELECT/.test(a.tagName))return;
   render();
 }
@@ -241,7 +264,7 @@ const $=id=>document.getElementById(id);
 const esc=s=>String(s==null?"":s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 const today=()=>{const d=new Date();return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0")};
 const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,6);
-const sName=id=>(D.staff.find(s=>s.id===id)||{}).name||"-";
+const sName=id=>(D.people.find(s=>s.id===id)||{}).name||"-";
 const toArr=v=>Array.isArray(v)?v:(v?[v]:[]);
 const j=v=>toArr(v).map(tr).join(", ");
 const chk=(n,arr)=>arr.length?`<div class="ck">${arr.map(x=>`<label><input type="checkbox" name="${n}" value="${esc(x)}">${esc(x)}</label>`).join("")}</div>`:'<span class="muted">এডমিন এখনো যোগ করেনি (এই চরের জন্য)</span>';
@@ -250,62 +273,125 @@ const opts=(arr,sel,ph)=>`<option value="">${ph||"-- সিলেক্ট --"}<
 
 function render(){
   topBar();
-  if(!me)return loginView();
+  if(!me)return AUTHU?loadingView():loginView();
   if(me.role==="admin"){tab=tab||"home";adminView()}else{tab=tab||"home";staffView()}
 }
 
+let LMODE="login",LOGIN_NOTE="",LOGIN_OK=false;
+function loadingView(){$("app").innerHTML='<div class="card muted">লোড হচ্ছে...</div>'}
+const LKEY="smLastEmail";
+const lastEmail=()=>{try{return localStorage.getItem(LKEY)||""}catch(e){return ""}};
+function lmsg(t,ok,extra){const e=$("lmsg");if(!e)return;e.style.color=ok?"#1f7a45":"#c62828";e.innerHTML=esc(t)+(extra||"")}
+function authErr(e){
+  const c=(e&&e.code)||"";
+  if(/invalid-credential|wrong-password|user-not-found|invalid-login/.test(c))return "ইমেইল বা পাসওয়ার্ড ভুল";
+  if(c==="auth/too-many-requests")return "অনেকবার চেষ্টা হয়েছে, কিছুক্ষণ পরে আবার চেষ্টা করুন";
+  if(c==="auth/network-request-failed")return "ইন্টারনেট সংযোগ নেই";
+  if(c==="auth/email-already-in-use")return "এই ইমেইল আগে থেকেই ব্যবহৃত";
+  if(c==="auth/weak-password")return "পাসওয়ার্ড কমপক্ষে ৬ অক্ষরের হতে হবে";
+  if(c==="auth/invalid-email")return "ইমেইল ঠিক নয়";
+  if(c==="auth/operation-not-allowed")return "Firebase-এ Email/Password চালু করা হয়নি";
+  if(c==="permission-denied")return "অনুমতি নেই";
+  return "ত্রুটি: "+(c||(e&&e.message)||"");
+}
 function loginView(){
-  $("app").innerHTML=`<div class="card">${ring()}<h3>লগইন</h3>
-  <label>ভূমিকা</label><select id="role" onchange="loginView2()"><option value="acct">ইউজার / সাব এডমিন</option><option value="admin">মেইন এডমিন</option></select>
-  <div id="lf"></div></div>
-  ${useFB?`<p class="muted">✅ ডাটা অনলাইনে সবার সাথে শেয়ার হচ্ছে। এডমিনের ডিফল্ট পাসওয়ার্ড: admin123 (সেটিংসে বদলান)।</p>`:`<p class="muted">⚠ Firebase সেট করা হয়নি, তাই ডাটা শুধু এই ডিভাইসে সেভ হচ্ছে। এডমিনের ডিফল্ট পাসওয়ার্ড: admin123।</p>`}`;
-  loginView2();
-}
-function loginView2(){
-  const r=$("role").value;
-  $("lf").innerHTML=r==="admin"?`<label>পাসওয়ার্ড</label><input id="pw" type="password"><br><br><button onclick="doLogin()">প্রবেশ</button>`
-  :`<label>আপনার নাম</label><select id="sn">${`<option value="">-- সিলেক্ট --</option>`+D.staff.map(s=>`<option value="${s.id}">${esc(s.name)}${s.role==="sub"?" ("+tr("সাব এডমিন")+")":""}</option>`).join("")}</select>
-  <label>পিন</label><input id="pw" type="password" inputmode="numeric"><br><br><button onclick="doLogin()">প্রবেশ</button>`;
-}
-function doLogin(){
-  if($("role").value==="admin"){
-    if($("pw").value===D.adminPass){me={role:"admin"};tab="";render()}else alert("ভুল পাসওয়ার্ড");
-  }else{
-    const s=D.staff.find(x=>x.id===$("sn").value);
-    if(s&&$("pw").value===s.pin){me={role:s.role==="sub"?"sub":"user",id:s.id,name:s.name};tab="";render()}else alert("নাম বা পিন ভুল");
+  if(!useFB){
+    $("app").innerHTML=`<div class="card">${ring()}<h3>ডেমো মোড (Firebase সংযুক্ত নয়)</h3>
+    <label>একাউন্ট</label><select id="dm"><option value="admin">মেইন এডমিন</option>${D.accounts.map(x=>`<option value="${x.id}">${esc(x.name)} (${tr(roleTxt(x.role))})</option>`).join("")}</select><br><br>
+    <button onclick="doDemo()">প্রবেশ</button></div>`;return;
   }
+  if(LMODE==="signup"){
+    $("app").innerHTML=`<div class="card">${ring()}<h3>মেইন এডমিন একাউন্ট তৈরি</h3>
+    <label>ইমেইল</label><input id="em" type="email" value="${ADMIN_EMAIL}" readonly>
+    <label>পাসওয়ার্ড (কমপক্ষে ৬ অক্ষর)</label><input id="pw" type="password" autocomplete="new-password">
+    <label>পাসওয়ার্ড আবার দিন</label><input id="pw2" type="password" autocomplete="new-password"><br><br>
+    <button onclick="doSignup()">একাউন্ট তৈরি করুন</button> <button class="sec" onclick="LMODE='login';render()">বাতিল</button>
+    <div id="lmsg" class="muted" style="margin-top:12px"></div></div>`;return;
+  }
+  $("app").innerHTML=`<div class="card">${ring()}<h3>লগইন</h3>
+  <label>ইমেইল</label><input id="em" type="email" autocomplete="username" value="${esc(lastEmail())}">
+  <label>পাসওয়ার্ড</label><input id="pw" type="password" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()"><br><br>
+  <button onclick="doLogin()">প্রবেশ</button>
+  <div id="lmsg" class="muted" style="margin-top:12px"></div>
+  <p style="margin:14px 0 0"><a class="lnk" href="#" onclick="forgotPw();return false">পাসওয়ার্ড ভুলে গেছেন?</a></p></div>
+  <p class="muted" style="margin:14px 6px">মেইন এডমিন প্রথমবার? <a class="lnk" href="#" onclick="LMODE='signup';render();return false">একাউন্ট তৈরি করুন</a></p>`;
+  if(LOGIN_NOTE)lmsg(LOGIN_NOTE,LOGIN_OK);
+}
+async function doLogin(){
+  const em=$("em").value.trim().toLowerCase(),pw=$("pw").value;
+  LOGIN_NOTE="";LOGIN_OK=false;
+  if(!em||!pw)return lmsg("ইমেইল ও পাসওয়ার্ড দিন");
+  lmsg("প্রবেশ করা হচ্ছে...",1);
+  try{
+    const c=await auth.signInWithEmailAndPassword(em,pw);
+    if(!c.user.emailVerified){
+      await auth.signOut();
+      return lmsg("ইমেইল ভেরিফাই করা হয়নি। ইনবক্স বা স্প্যাম ফোল্ডারে ভেরিফিকেশন লিংক দেখুন।",0,' <a class="lnk" href="#" onclick="resendVerify();return false">'+esc(tr("ভেরিফিকেশন ইমেইল আবার পাঠান"))+'</a>');
+    }
+    try{localStorage.setItem(LKEY,em)}catch(e){}
+  }catch(e){lmsg(authErr(e))}
+}
+async function resendVerify(){
+  const em=$("em").value.trim().toLowerCase(),pw=$("pw").value;
+  if(!em||!pw)return lmsg("ইমেইল ও পাসওয়ার্ড দিন");
+  try{const c=await auth.signInWithEmailAndPassword(em,pw);await c.user.sendEmailVerification();await auth.signOut();lmsg("ভেরিফিকেশন ইমেইল পাঠানো হয়েছে",1)}catch(e){lmsg(authErr(e))}
+}
+async function forgotPw(){
+  const em=$("em").value.trim().toLowerCase();
+  if(!em)return lmsg("আগে ইমেইল লিখুন");
+  try{await auth.sendPasswordResetEmail(em);lmsg("পাসওয়ার্ড রিসেট ইমেইল পাঠানো হয়েছে",1)}catch(e){lmsg(authErr(e))}
+}
+async function doSignup(){
+  const pw=$("pw").value,pw2=$("pw2").value;
+  if(pw.length<6)return lmsg("পাসওয়ার্ড কমপক্ষে ৬ অক্ষরের হতে হবে");
+  if(pw!==pw2)return lmsg("দুটি পাসওয়ার্ড মেলেনি");
+  lmsg("একাউন্ট তৈরি হচ্ছে...",1);
+  try{
+    const c=await auth.createUserWithEmailAndPassword(ADMIN_EMAIL,pw);
+    await c.user.sendEmailVerification();await auth.signOut();
+    LMODE="login";LOGIN_OK=true;LOGIN_NOTE="ভেরিফিকেশন ইমেইল পাঠানো হয়েছে। ইমেইলের লিংকে চাপ দিয়ে ভেরিফাই করে তারপর লগইন করুন।";render();
+  }catch(e){lmsg(e&&e.code==="auth/email-already-in-use"?"এই ইমেইলে আগেই একাউন্ট আছে। লগইন করুন, বা পাসওয়ার্ড ভুলে গেলে রিসেট করুন।":authErr(e))}
+}
+function doDemo(){
+  const v=$("dm").value;
+  if(v==="admin")me={role:"admin",uid:"demo",id:"demo",name:"মেইন এডমিন",email:ADMIN_EMAIL};
+  else{const x=D.accounts.find(y=>y.id===v);me={role:x.role==="sub"?"sub":"user",uid:x.id,id:x.id,name:x.name,email:x.email}}
+  tab="";render();
 }
 
 /* ---------- Staff ---------- */
 const isAdm=()=>!!me&&me.role==="admin",isMgr=()=>!!me&&(me.role==="admin"||me.role==="sub");
-const myAcc=()=>{if(!me||me.role==="admin")return null;const x=D.staff.find(y=>y.id===me.id);return x&&x.access?x.access:null};
+const DENY={areas:["\u0001"],projects:["\u0001"],chars:["\u0001"],staff:["\u0001"]};
+const myAcc=()=>{if(!me||me.role==="admin")return null;const x=D.accounts.find(y=>y.id===me.id);if(!x)return DENY;return x.access||null};
 const allow=k=>{const a=myAcc();return a&&a[k]&&a[k].length?a[k]:null};
 const okItem=(k,v)=>{const l=allow(k);return !l||l.includes(v)};
 const optsAllowed=(k,all)=>{const l=allow(k);return l?all.filter(x=>l.includes(x)):all};
+const visibleStaff=()=>{const l=allow("staff");return l?D.people.filter(p=>l.includes(p.id)):D.people};
 function moveInScope(m){
-  if(!me||me.role==="admin"||m.staffId===me.id)return true;
-  if(me.role!=="sub")return false;
-  const la=allow("areas"),lp=allow("projects"),lc=allow("chars"),ar=toArr(m.ap),ch=toArr(m.char);
+  if(!me)return false;
+  if(me.role==="admin"||(m.by&&m.by===me.uid))return true;
+  const ls=allow("staff"),la=allow("areas"),lp=allow("projects"),lc=allow("chars"),ar=toArr(m.ap),ch=toArr(m.char);
+  if(ls&&!ls.includes(m.staffId))return false;
   if(la&&!(ar.length&&ar.every(x=>la.includes(x.a))))return false;
   if(lp&&!(ar.length&&ar.every(x=>x.p.every(p=>lp.includes(p)))))return false;
   if(lc&&!(ch.length&&ch.every(c=>lc.includes(c))))return false;
   return true;
 }
 const okBen=b=>{const l=allow("chars");return !l||(!!benChar(b)&&l.includes(benChar(b)))};
-const myStaff=()=>me.role==="admin"?D.staff:D.staff.filter(x=>x.id===me.id||x.createdBy===me.id);
 const roleTxt=r=>r==="sub"?"সাব এডমিন":"ইউজার";
-const accTxt=a=>{a=a||{};const p=[["এরিয়া","areas"],["প্রজেক্ট","projects"],["চর","chars"]].filter(([l,k])=>a[k]&&a[k].length).map(([l,k])=>tr(l)+": "+a[k].map(tr).join(", "));return p.join(" · ")||tr("সব এক্সেস")};
-const TL={move:["➕","মুভমেন্ট"],report:["📊","রিপোর্ট"],ben:["🧑‍🌾","বেনিফিশিয়ারি"],inp:["🌱","ইনপুট সাপোর্ট"],areas:["🗺","এরিয়া"],projects:["📁","প্রজেক্ট"],groups:["👥","গ্রুপ"],haps:["📍","SED হাব"],chars:["🏝","চর"],staff:["👤","একাউন্ট"],set:["⚙️","সেটিংস"],plan:["➕","নতুন পরিকল্পনা"],my:["📋","আমার কাজ"]};
+const stNames=ids=>toArr(ids).map(id=>(D.people.find(p=>p.id===id)||{}).name).filter(Boolean).join(", ");
+const accTxt=a=>{a=a||{};const p=[["স্টাফ","staff"],["এরিয়া","areas"],["প্রজেক্ট","projects"],["চর","chars"]].filter(([l,k])=>a[k]&&a[k].length).map(([l,k])=>tr(l)+": "+(k==="staff"?stNames(a[k]):a[k].map(tr).join(", ")));return p.join(" · ")||tr("সব এক্সেস")};
+const TL={move:["➕","মুভমেন্ট"],report:["📊","রিপোর্ট"],ben:["🧑‍🌾","বেনিফিশিয়ারি"],inp:["🌱","ইনপুট সাপোর্ট"],areas:["🗺","এরিয়া"],projects:["📁","প্রজেক্ট"],groups:["👥","গ্রুপ"],haps:["📍","SED হাব"],chars:["🏝","চর"],accounts:["👤","একাউন্ট"],people:["👷","স্টাফ"],set:["⚙️","সেটিংস"],plan:["➕","নতুন পরিকল্পনা"],my:["📋","আমার কাজ"]};
 const MENU=()=>me.role==="admin"?[
  {t:"মুভমেন্ট ও রিপোর্ট",s:"পরিকল্পনা, বাস্তবায়ন ও রিপোর্ট",c:"indigo",i:"🚶",k:["move","report"]},
  {t:"বেনিফিশিয়ারি ও ইনপুট",s:"বেনিফিশিয়ারি তালিকা ও ইনপুট সাপোর্ট",c:"teal",i:"🌱",k:["ben","inp"]},
  {t:"এরিয়া ও প্রজেক্ট",s:"কাজের এলাকা ও প্রজেক্টের নাম",c:"orange",i:"🗺",k:["areas","projects"]},
  {t:"চর, গ্রুপ ও SED হাব",s:"চর, গ্রুপ ও হাবের তালিকা",c:"blue",i:"🏝",k:["chars","groups","haps"]},
- {t:"একাউন্ট ও সেটিংস",s:"সাব এডমিন, ইউজার ও ব্যাকআপ",c:"green",i:"⚙️",k:["staff","set"]}
+ {t:"স্টাফ, একাউন্ট ও সেটিংস",s:"স্টাফ তালিকা, লগইন একাউন্ট ও ব্যাকআপ",c:"green",i:"👷",k:["people","accounts","set"]}
 ]:me.role==="sub"?[
  {t:"মুভমেন্ট ও রিপোর্ট",s:"পরিকল্পনা, বাস্তবায়ন ও রিপোর্ট",c:"indigo",i:"🚶",k:["move","my","report"]},
  {t:"বেনিফিশিয়ারি ও ইনপুট",s:"বেনিফিশিয়ারি তালিকা ও ইনপুট সাপোর্ট",c:"teal",i:"🌱",k:["ben","inp"]},
- {t:"একাউন্ট",s:"আপনার ইউজার একাউন্ট ও এক্সেস",c:"green",i:"👤",k:["staff"]}
+ {t:"একাউন্ট",s:"আপনার ইউজার একাউন্ট ও এক্সেস",c:"green",i:"👤",k:["accounts"]}
 ]:[
  {t:"আমার মুভমেন্ট",s:"পরিকল্পনা ও বাস্তবায়ন",c:"indigo",i:"🚶",k:["plan","my"]},
  {t:"বেনিফিশিয়ারি ও ইনপুট",s:"বেনিফিশিয়ারি ও ইনপুট সাপোর্ট",c:"teal",i:"🌱",k:["ben","inp"]}
@@ -313,7 +399,9 @@ const MENU=()=>me.role==="admin"?[
 const ring=()=>`<div class="ring">${[0,1,2,3,4,5,6,7].map(i=>`<span style="--i:${i}">F</span>`).join("")}</div>`;
 const go=k=>{tab=k;EDITING=null;render()};
 const LO='<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg>';
-const logout=()=>{me=null;tab="";EDITING=null;render()};
+const logout=()=>{EDITING=null;EDITP=null;if(useFB){auth.signOut()}else{me=null;tab="";render()}};
+const ascii=t=>String(t||"").replace(/[০-৯]/g,d=>"০১২৩৪৫৬৭৮৯".indexOf(d));
+const callBtn=b=>{const n=ascii(b.mobile).replace(/[^\d+]/g,"");return n?`<a class="call" href="tel:${n}">📞 ${tr("কল")}</a>`:""};
 const syncTxt=()=>useFB?(navigator.onLine?"☁️✓ "+tr("আপ টু ডেট"):"📴 "+tr("অফলাইন (নেট এলে জমা হবে)")):"💾 "+tr("লোকাল ডাটা");
 const setSync=()=>{const e=$("sync");if(e)e.innerHTML=syncTxt()};
 function greet(){const h=new Date().getHours();return h<5?"শুভ রাত্রি":h<12?"শুভ সকাল":h<15?"শুভ দুপুর":h<18?"শুভ বিকাল":h<20?"শুভ সন্ধ্যা":"শুভ রাত্রি"}
@@ -322,7 +410,7 @@ function topBar(){
   if(!me)h=`<div class="hero sm">${ring()}<div class="ht" style="justify-content:flex-end">${langBtn()}</div><div class="hm" style="margin-top:10px"><div class="av">🌾</div><div><small>এগ্রিকালচার · SED সেক্টর</small><h2 style="margin:2px 0 0">স্টাফ মুভমেন্ট মনিটরিং</h2></div></div></div>`;
   else if(!tab||tab==="home"){
     const nm=me.role==="admin"?"এডমিন":me.name,ini=me.role==="admin"?"এড":nm.trim().split(/\s+/).map(w=>[...w][0]).slice(0,2).join("");
-    const tm=D.moves.filter(m=>m.date===today()&&(me.role==="user"?m.staffId===me.id:moveInScope(m))),pl=tm.filter(m=>m.status==="পরিকল্পিত").length;
+    const tm=D.moves.filter(m=>m.date===today()&&moveInScope(m)),pl=tm.filter(m=>m.status==="পরিকল্পিত").length;
     let dt="";try{dt=new Date().toLocaleDateString(LANG==="en"?"en-GB":"bn-BD",{day:"numeric",month:"long",year:"numeric"})}catch(e){dt=today()}
     h=`<div class="hero">${ring()}<div class="ht"><span class="chip ok" id="sync">${syncTxt()}</span><div class="rt">${langBtn()}<button class="ico" onclick="logout()" aria-label="লগআউট">${LO}</button></div></div>
     <div class="hm"><div class="av">${esc(ini)}</div><div><small>${greet()}</small><h2>${esc(nm)}</h2><div class="chips"><span class="chip">${me.role==="admin"?"🛡 "+tr("মেইন এডমিন"):me.role==="sub"?"🛡 "+tr("সাব এডমিন"):"👤 "+tr("ইউজার")}</span><span class="chip">📅 ${esc(dt)}</span></div></div></div>
@@ -341,12 +429,12 @@ function staffView(){
   else if(tab==="ben")benView();
   else if(tab==="inp")inpView();
   else if(tab==="report")report();
-  else if(tab==="staff")staffAdm();
+  else if(tab==="accounts")accountsAdm();
   else myList();
 }
 function planForm(){
   $("c").innerHTML=`<div class="card"><h3>সকালের পরিকল্পনা</h3>
-  ${isMgr()?`<label>স্টাফ</label><select id="ps">${me.role==="admin"?`<option value="">-- সিলেক্ট --</option>`:""}${myStaff().map(s=>`<option value="${s.id}" ${s.id===me.id?"selected":""}>${esc(s.name)}</option>`).join("")}</select>`:""}
+  <label>স্টাফ</label>${visibleStaff().length?`<select id="ps"><option value="">-- সিলেক্ট --</option>${visibleStaff().map((p,i,a)=>`<option value="${p.id}" ${a.length===1?"selected":""}>${esc(p.name)}${p.desig?" — "+esc(p.desig):""}</option>`).join("")}</select>`:`<div class="muted">আপনার এক্সেসে কোনো স্টাফ নেই</div><input type="hidden" id="ps" value="">`}
   <label>তারিখ</label><input type="date" id="pd" value="${today()}">
   <label>এরিয়া সিলেক্ট করুন (একাধিক)</label>
   <div class="ck">${D.areas.map((a,i)=>[a,i]).filter(([a])=>okItem("areas",a)).map(([a,i])=>`<label><input type="checkbox" name="ar" value="${i}" onchange="areaChange()">${esc(a)}</label>`).join("")}</div>
@@ -364,7 +452,7 @@ function areaChange(){
 }
 const apTxt=m=>toArr(m.ap).map(x=>tr(x.a)+" ("+x.p.map(tr).join(", ")+")").join(", ");
 function addPlan(){
-  if(isMgr()&&!$("ps").value)return alert("স্টাফ সিলেক্ট করুন");
+  if(!$("ps").value)return alert("স্টাফ সিলেক্ট করুন");
   const as=pick("ar");if(!as.length)return alert("কমপক্ষে একটি এরিয়া সিলেক্ট করুন");
   const ap=[];for(const i of as){const pj=pick("pj_"+i);if(!pj.length)return alert(tr(D.areas[i])+" "+tr("এর প্রজেক্ট সিলেক্ট করুন"));ap.push({a:D.areas[i],p:pj})}
   const cs=pick("pc");if(!cs.length)return alert("কমপক্ষে একটি চর সিলেক্ট করুন");
@@ -375,7 +463,7 @@ function addPlan(){
     for(const gi of gs){
       const k=c+"_"+gi,a=pick("a_"+k);
       if(!a.length)return alert(tr(cn||"চর ছাড়া")+" / "+tr(gi==="x"?"গ্রুপ ছাড়া":D.groups[gi])+" "+tr("এর কাজের ধরন সিলেক্ট করুন"));
-      out.push({id:uid(),staffId:isMgr()?$("ps").value:me.id,date:$("pd").value,ap:ap,act:a,group:gi==="x"?[]:[D.groups[gi]],hap:a.includes(HUBV)?pick("h_"+k):[],bens:a.includes(BENV)?pick("b_"+k):[],fol:a.includes("ফলোআপ")?pick("f_"+k):[],char:cn?[cn]:[],plan:$("pn").value,status:"পরিকল্পিত",note:""});
+      out.push({id:uid(),staffId:$("ps").value,by:me.uid,date:$("pd").value,ap:ap,act:a,group:gi==="x"?[]:[D.groups[gi]],hap:a.includes(HUBV)?pick("h_"+k):[],bens:a.includes(BENV)?pick("b_"+k):[],fol:a.includes("ফলোআপ")?pick("f_"+k):[],char:cn?[cn]:[],plan:$("pn").value,status:"পরিকল্পিত",note:""});
     }
   }
   D.moves.push(...out);out.forEach(saveMove);tab=isMgr()?"report":"my";render();alert("মুভমেন্ট সেভ হয়েছে");
@@ -404,9 +492,9 @@ function rebuild(){
 }
 function hubToggle(k){const a=pick("a_"+k),t=(id,on)=>{$(id+k).style.display=on?"block":"none"};t("hb_",a.includes(HUBV));t("bb_",a.includes(BENV));t("fb_",a.includes("ফলোআপ"))}
 function myList(){
-  const l=D.moves.filter(m=>m.staffId===me.id).sort((a,b)=>b.date.localeCompare(a.date));
+  const l=D.moves.filter(moveInScope).sort((a,b)=>b.date.localeCompare(a.date));
   $("c").innerHTML=l.length?l.map(m=>`<div class="card"><div class="item" style="border:0;padding:0"><b>${esc(j(m.act))}</b><span class="badge ${m.status==="বাস্তবায়িত"?"d":"p"}">${m.status}</span></div>
-  <div class="muted">${m.date} · ${apTxt(m)?esc(apTxt(m))+" · ":""}${esc(j(m.group)||"-")} · ${esc(j(m.hap)||"-")} · ${tr("চর")}: ${esc(j(m.char)||"-")}</div>
+  <div class="muted"><b>${esc(sName(m.staffId))}</b> · ${m.date} · ${apTxt(m)?esc(apTxt(m))+" · ":""}${esc(j(m.group)||"-")} · ${esc(j(m.hap)||"-")} · ${tr("চর")}: ${esc(j(m.char)||"-")}</div>
   ${m.plan?`<div>${tr("পরিকল্পনা")}: ${esc(m.plan)}</div>`:""}
   ${benTxt(m)?`<div>${tr("বেনিফিশিয়ারি")}: ${esc(benTxt(m))}</div>`:""}
   ${m.status==="বাস্তবায়িত"?`<div><b>সম্পন্ন কাজ:</b> ${esc(m.note)}</div>`:`<button class="sm" style="margin-top:8px" onclick="doneForm('${m.id}')">✔ বাস্তবায়ন করুন</button>`}
@@ -423,7 +511,7 @@ function delMove(id){if(confirm("মুছে ফেলবেন?")){D.moves=D.m
 function adminView(){
   if(tab==="home")return homeView();
   shell();
-  if(tab==="move")planForm();else if(tab==="ben")benView();else if(tab==="inp")inpView();else if(tab==="report")report();else if(tab==="staff")staffAdm();else if(tab==="set")settings();else listAdm(tab);
+  if(tab==="move")planForm();else if(tab==="ben")benView();else if(tab==="inp")inpView();else if(tab==="report")report();else if(tab==="accounts")accountsAdm();else if(tab==="people")peopleAdm();else if(tab==="set")settings();else listAdm(tab);
 }
 const MP=k=>k==="groups"?D.groupChar:k==="haps"?D.hapChar:null;
 const addName=k=>LANG==="en"?"Add "+tr(LT[k])+" name":LT[k]+"-এর নাম যোগ করুন";
@@ -434,28 +522,34 @@ function listAdm(k){
   document.querySelector("#c button").onclick=()=>{const v=$("nv").value.trim();if(!v)return;if(D[k].includes(v))return alert("আগে থেকেই আছে");D[k].push(v);if(MP(k)&&$("gc").value)MP(k)[v]=$("gc").value;save();render()};
 }
 function delItem(k,i){if(confirm("মুছবেন?")){const nm=D[k][i];D[k].splice(i,1);if(MP(k))delete MP(k)[nm];save();render()}}
-let EDITING=null;
-function staffAdm(){
+let EDITING=null,EDITP=null;
+const stOpts=()=>visibleStaff().map(p=>[p.id,p.name+(p.desig?" — "+p.desig:"")]);
+function accountsAdm(){
   if(EDITING)return accEditView();
-  const mine=me.role==="admin"?D.staff:D.staff.filter(x=>x.createdBy===me.id);
+  const mine=me.role==="admin"?D.accounts:D.accounts.filter(x=>x.createdBy===me.id);
   const AA=optsAllowed("areas",D.areas),PP=optsAllowed("projects",D.projects),CC=optsAllowed("chars",D.chars);
-  const lim=me.role==="sub"&&(allow("areas")||allow("projects")||allow("chars"));
+  const lim=me.role==="sub"&&(allow("areas")||allow("projects")||allow("chars")||allow("staff"));
   $("c").innerHTML=`<div class="card"><h3>${me.role==="admin"?"একাউন্ট খুলুন":"ইউজার একাউন্ট খুলুন"}</h3>
-  <div class="row"><input id="sn" placeholder="নাম"><input id="sp" placeholder="পিন (লগইনের জন্য)" inputmode="numeric"></div>
+  <label>নাম</label><input id="an">
+  <label>ইমেইল</label><input id="ae" type="email" autocomplete="off">
+  <label>পাসওয়ার্ড (কমপক্ষে ৬ অক্ষর)</label><input id="ap" type="text" autocomplete="off">
   ${me.role==="admin"?`<label>একাউন্টের ধরন</label><select id="sr"><option value="user">ইউজার</option><option value="sub">সাব এডমিন</option></select>`:""}
   <p class="muted" style="margin:12px 0 0">এক্সেস দিন (কিছু বাছাই না করলে ঐ অংশে কোনো সীমা থাকবে না)</p>
   ${lim?`<p class="muted" style="margin:4px 0 0">আপনার নিজের এক্সেসের বাইরে দেওয়া যাবে না</p>`:""}
+  <label>স্টাফ (একাধিক)</label>${chkId("xs",stOpts(),[],"কোনো স্টাফ যোগ করা হয়নি")}
   <label>এরিয়া</label>${chk2("xa",AA,[])}
   <label>প্রজেক্ট</label>${chk2("xp",PP,[])}
   <label>চর</label>${chk2("xc",CC,[])}
-  <br><button onclick="addStaff()">যোগ করুন</button></div>
-  <div class="card">${mine.length?mine.map(x=>`<div class="item"><div><b>${esc(x.name)}</b> <span class="badge ${x.role==="sub"?"p":"d"}">${tr(roleTxt(x.role))}</span> <span class="muted">(${tr("পিন")}: ${esc(x.pin)})</span><div class="muted">${esc(accTxt(x.access))}</div></div><div><button class="sm sec" onclick="accEdit('${x.id}')">এক্সেস</button> <button class="sm red" onclick="delStaff('${x.id}')">মুছুন</button></div></div>`).join(""):'<span class="muted">কোনো একাউন্ট নেই</span>'}</div>`;
+  <br><button onclick="addAccount()">একাউন্ট খুলুন</button>
+  <p class="muted" style="margin:10px 0 0">ঐ ইমেইলে একটা ভেরিফিকেশন লিংক যাবে। লিংকে চাপ না দেওয়া পর্যন্ত লগইন করা যাবে না।</p></div>
+  <div class="card">${mine.length?mine.map(x=>`<div class="item"><div><b>${esc(x.name)}</b> <span class="badge ${x.role==="sub"?"p":"d"}">${tr(roleTxt(x.role))}</span><div class="muted">${esc(x.email||"")}</div><div class="muted">${esc(accTxt(x.access))}</div></div><div class="acts"><button class="sm sec" onclick="accEdit('${x.id}')">এক্সেস</button><button class="sm sec" onclick="resetMail('${esc(x.email||"")}')">পাসওয়ার্ড রিসেট</button><button class="sm red" onclick="delAccount('${x.id}')">মুছুন</button></div></div>`).join(""):'<span class="muted">কোনো একাউন্ট নেই</span>'}</div>`;
 }
 function accEditView(){
-  const x=D.staff.find(y=>y.id===EDITING);if(!x){EDITING=null;return staffAdm()}
+  const x=D.accounts.find(y=>y.id===EDITING);if(!x){EDITING=null;return accountsAdm()}
   const a=x.access||{};
   $("c").innerHTML=`<div class="card"><h3>${esc(x.name)} — ${tr("এক্সেস")}</h3>
   <p class="muted" style="margin:0">এক্সেস দিন (কিছু বাছাই না করলে ঐ অংশে কোনো সীমা থাকবে না)</p>
+  <label>স্টাফ (একাধিক)</label>${chkId("xs",stOpts(),toArr(a.staff),"কোনো স্টাফ যোগ করা হয়নি")}
   <label>এরিয়া</label>${chk2("xa",optsAllowed("areas",D.areas),toArr(a.areas))}
   <label>প্রজেক্ট</label>${chk2("xp",optsAllowed("projects",D.projects),toArr(a.projects))}
   <label>চর</label>${chk2("xc",optsAllowed("chars",D.chars),toArr(a.chars))}
@@ -463,28 +557,62 @@ function accEditView(){
 }
 function readAcc(){
   const g=(n,k)=>{let v=pick(n);const l=allow(k);if(l&&!v.length)v=[...l];return v};
-  return {areas:g("xa","areas"),projects:g("xp","projects"),chars:g("xc","chars")};
+  return {staff:g("xs","staff"),areas:g("xa","areas"),projects:g("xp","projects"),chars:g("xc","chars")};
 }
-function addStaff(){
-  const n=$("sn").value.trim(),p=$("sp").value.trim();
-  if(!n||!p)return alert("নাম ও পিন দিন");
-  if(D.staff.some(x=>x.name.trim().toLowerCase()===n.toLowerCase()))return alert("আগে থেকেই আছে");
-  const x={id:uid(),name:n,pin:p,role:me.role==="admin"&&$("sr").value==="sub"?"sub":"user",access:readAcc(),createdBy:me.role==="admin"?"admin":me.id};
-  D.staff.push(x);saveStaff(x);render();
+const secApp=()=>firebase.apps.find(a=>a.name==="sec")||firebase.initializeApp(FB_CONFIG,"sec");
+async function addAccount(){
+  const n=$("an").value.trim(),em=$("ae").value.trim().toLowerCase(),pw=$("ap").value;
+  if(!n||!em||!pw)return alert("নাম, ইমেইল ও পাসওয়ার্ড দিন");
+  if(pw.length<6)return alert("পাসওয়ার্ড কমপক্ষে ৬ অক্ষরের হতে হবে");
+  if(em===ADMIN_EMAIL)return alert("এই ইমেইল মেইন এডমিনের");
+  if(D.accounts.some(x=>(x.email||"").toLowerCase()===em))return alert("আগে থেকেই আছে");
+  const role=me.role==="admin"&&$("sr").value==="sub"?"sub":"user",access=readAcc();
+  const mk=id=>({id,uid:id,name:n,email:em,role,access,createdBy:me.role==="admin"?"admin":me.id});
+  if(!useFB){const x=mk(uid());D.accounts.push(x);save();render();return}
+  try{
+    const sec=secApp(),c=await sec.auth().createUserWithEmailAndPassword(em,pw);
+    await c.user.sendEmailVerification();
+    const id=c.user.uid;await sec.auth().signOut();
+    const x=mk(id);await db.collection("accounts").doc(id).set(x);
+    alert("একাউন্ট খোলা হয়েছে। ভেরিফিকেশন ইমেইল পাঠানো হয়েছে");render();
+  }catch(e){alert(authErr(e))}
 }
 function accEdit(id){EDITING=id;render()}
-function saveAcc(){const x=D.staff.find(y=>y.id===EDITING);if(!x)return;x.access=readAcc();saveStaff(x);EDITING=null;render()}
-function delStaff(id){
-  const x=D.staff.find(y=>y.id===id);if(!x)return;
+function saveAcc(){const x=D.accounts.find(y=>y.id===EDITING);if(!x)return;x.access=readAcc();saveAccount(x);EDITING=null;render()}
+function delAccount(id){
+  const x=D.accounts.find(y=>y.id===id);if(!x)return;
   if(me.role!=="admin"&&x.createdBy!==me.id)return;
-  if(confirm("একাউন্ট মুছবেন? (তার কাজ থাকবে)")){D.staff=D.staff.filter(y=>y.id!==id);delStaffDb(id);render()}
+  if(confirm("একাউন্ট মুছবেন? (তার কাজ থাকবে)")){D.accounts=D.accounts.filter(y=>y.id!==id);delAccountDb(id);render()}
 }
+async function resetMail(em){
+  if(!em)return;
+  if(!useFB)return alert("পাসওয়ার্ড রিসেট ইমেইল পাঠানো হয়েছে");
+  try{await auth.sendPasswordResetEmail(em);alert("পাসওয়ার্ড রিসেট ইমেইল পাঠানো হয়েছে")}catch(e){alert(authErr(e))}
+}
+function peopleAdm(){
+  const e=EDITP?D.people.find(x=>x.id===EDITP):null;
+  $("c").innerHTML=`<div class="card"><h3>${e?"স্টাফ সম্পাদনা":"স্টাফ যোগ করুন"}</h3>
+  <label>নাম</label><input id="pn1" value="${esc(e?e.name:"")}">
+  <label>ডেজিগনেশন</label><input id="pd1" value="${esc(e?e.desig:"")}">
+  <label>ফোন নম্বর</label><input id="pf1" type="tel" inputmode="numeric" value="${esc(e?e.phone:"")}">
+  <label>এরিয়া (একাধিক)</label>${chk2("pa1",D.areas,e?toArr(e.areas):[])}
+  <br><button onclick="savePersonForm()">${e?"সেভ":"যোগ করুন"}</button>${e?` <button class="sec" onclick="EDITP=null;render()">বাতিল</button>`:""}</div>
+  <div class="card">${D.people.length?D.people.map(x=>`<div class="item"><div><b>${esc(x.name)}</b>${x.desig?` <span class="muted">— ${esc(x.desig)}</span>`:""}<div class="muted">${esc(x.phone||"")}${x.areas&&x.areas.length?" · "+esc(x.areas.map(tr).join(", ")):""}</div></div><div class="acts">${callBtn({mobile:x.phone})}<button class="sm sec" onclick="EDITP='${x.id}';render()">সম্পাদনা</button><button class="sm red" onclick="delPerson('${x.id}')">মুছুন</button></div></div>`).join(""):'<span class="muted">কোনো স্টাফ নেই</span>'}</div>`;
+}
+function savePersonForm(){
+  const n=$("pn1").value.trim();if(!n)return alert("নাম লিখুন");
+  const e=EDITP?D.people.find(x=>x.id===EDITP):null;
+  const x={id:e?e.id:uid(),name:n,desig:$("pd1").value.trim(),phone:$("pf1").value.trim(),areas:pick("pa1")};
+  if(e)Object.assign(e,x);else D.people.push(x);
+  savePerson(x);EDITP=null;render();
+}
+function delPerson(id){if(confirm("স্টাফ মুছবেন? (তার মুভমেন্ট থাকবে)")){D.people=D.people.filter(x=>x.id!==id);delPersonDb(id);render()}}
 function settings(){
-  $("c").innerHTML=`<div class="card"><h3>এডমিন পাসওয়ার্ড বদলান</h3><input id="np" type="text" placeholder="নতুন পাসওয়ার্ড"><br><br><button onclick="if($('np').value){D.adminPass=$('np').value;save();alert('পরিবর্তন হয়েছে')}">সেভ</button></div>
+  $("c").innerHTML=`<div class="card"><h3>আমার পাসওয়ার্ড</h3><button onclick="resetMail(me.email)">পাসওয়ার্ড রিসেট ইমেইল পাঠান</button></div>
   <div class="card"><h3>ব্যাকআপ</h3><button class="sec" onclick="backup()">ডাটা ডাউনলোড (JSON)</button> <button class="sec" onclick="$('rf').click()">ডাটা রিস্টোর</button><input type="file" id="rf" class="hide" accept=".json" onchange="restore(this)"></div>`;
 }
 function backup(){dl(new Blob([JSON.stringify(D)],{type:"application/json"}),"backup.json")}
-function restore(i){const r=new FileReader();r.onload=()=>{try{D=Object.assign(D,JSON.parse(r.result));save();if(useFB)D.moves.forEach(saveMove);if(useFB){D.bens.forEach(saveBen);D.inputs.forEach(saveInp);D.staff.forEach(saveStaff)}alert("রিস্টোর হয়েছে");render()}catch(e){alert("ফাইল ঠিক নয়")}};r.readAsText(i.files[0])}
+function restore(i){const r=new FileReader();r.onload=()=>{try{const o=JSON.parse(r.result);delete o.accounts;D=Object.assign(D,o);save();if(useFB){D.moves.forEach(saveMove);D.bens.forEach(saveBen);D.inputs.forEach(saveInp);D.people.forEach(savePerson)}alert("রিস্টোর হয়েছে");render()}catch(e){alert("ফাইল ঠিক নয়")}};r.readAsText(i.files[0])}
 function dl(b,n){const a=document.createElement("a");a.href=URL.createObjectURL(b);a.download=n;a.click()}
 
 /* ---------- Beneficiary ---------- */
@@ -503,8 +631,7 @@ function benView(){
   <label>গ্রুপ</label><select id="bg">${gOpts("","-- গ্রুপ সিলেক্ট করুন --")}</select>
   <label>নাম</label><input id="bn">
   <label>পিতার নাম</label><input id="bf">
-  <label>মোবাইল</label><input id="bm" type="tel" inputmode="numeric">
-  <label>এনআইডি কার্ড নম্বর</label><input id="bi" inputmode="numeric"><br><br>
+  <label>মোবাইল</label><input id="bm" type="tel" inputmode="numeric"><br>
   <button onclick="addBen()">যোগ করুন</button></div>
   <div class="card"><div class="row"><div><label>চর অনুযায়ী দেখুন</label><select id="bcf" onchange="$('bfl').innerHTML=gOpts(this.value,'সব গ্রুপ');benList()">${cOpts("সব চর")}</select></div>
   <div><label>গ্রুপ অনুযায়ী দেখুন</label><select id="bfl" onchange="benList()">${gOpts("","সব গ্রুপ")}</select></div></div><div id="bl"></div></div>`;
@@ -515,13 +642,13 @@ function addBen(){
   if(!g)return alert("গ্রুপ সিলেক্ট করুন");
   if(!n)return alert("নাম লিখুন");
   const ch=$("bc").value||D.groupChar[g]||"";if(allow("chars")&&!ch)return alert("চর সিলেক্ট করুন");
-  const b={id:uid(),char:ch,group:g,name:n,father:$("bf").value.trim(),mobile:$("bm").value.trim(),nid:$("bi").value.trim()};
+  const b={id:uid(),char:ch,group:g,name:n,father:$("bf").value.trim(),mobile:$("bm").value.trim()};
   D.bens.push(b);saveBen(b);
-  ["bn","bf","bm","bi"].forEach(i=>$(i).value="");$("bn").focus();benList();
+  ["bn","bf","bm"].forEach(i=>$(i).value="");$("bn").focus();benList();
 }
 function benList(){
   const l=benFilter($("bcf")?$("bcf").value:"",$("bfl")?$("bfl").value:"");
-  $("bl").innerHTML=`<p class="muted">${tr("মোট")}: ${l.length}${LANG==="en"?"":" জন"}</p>`+(l.map(b=>`<div class="item"><div><b>${esc(b.name)}</b> <span class="muted">(${esc(tr(benChar(b)||"চর নেই"))} · ${esc(b.group)})</span><div class="muted">${LANG==="en"?"Father":"পিতা"}: ${esc(b.father||"-")} · ${tr("মোবাইল")}: ${esc(b.mobile||"-")} · NID: ${esc(b.nid||"-")}</div></div>${isMgr()?`<button class="sm red" onclick="delBen('${b.id}')">মুছুন</button>`:""}</div>`).join("")||'<span class="muted">কোনো বেনিফিশিয়ারি নেই</span>');
+  $("bl").innerHTML=`<p class="muted">${tr("মোট")}: ${l.length}${LANG==="en"?"":" জন"}</p>`+(l.map(b=>`<div class="item"><div><b>${esc(b.name)}</b> <span class="muted">(${esc(tr(benChar(b)||"চর নেই"))} · ${esc(b.group)})</span><div class="muted">${LANG==="en"?"Father":"পিতা"}: ${esc(b.father||"-")} · ${tr("মোবাইল")}: ${esc(b.mobile||"-")}</div></div><div class="acts">${callBtn(b)}${isMgr()?`<button class="sm red" onclick="delBen('${b.id}')">মুছুন</button>`:""}</div></div>`).join("")||'<span class="muted">কোনো বেনিফিশিয়ারি নেই</span>');
 }
 function delBen(id){if(confirm("মুছবেন?")){D.bens=D.bens.filter(b=>b.id!==id);delBenDb(id);benList()}}
 
@@ -536,7 +663,7 @@ function addType(){const v=$("nt").value.trim();if(!v)return;if(D.inputTypes.inc
 function inputList(){
   const l=benFilter($("icf")?$("icf").value:"",$("igf")?$("igf").value:"");
   $("il").innerHTML=l.map(b=>{const ins=D.inputs.filter(i=>i.benId===b.id);
-    return `<div class="card"><b>${esc(b.name)}</b> <span class="muted">(${esc(tr(benChar(b)||"চর নেই"))} · ${esc(b.group)})</span>
+    return `<div class="card"><b>${esc(b.name)}</b> <span class="muted">(${esc(tr(benChar(b)||"চর নেই"))} · ${esc(b.group)})</span> ${callBtn(b)}
     <div style="margin:6px 0">${ins.map(i=>`<span class="badge d" style="display:inline-block;margin:2px">${esc(tr(i.type))}${i.qty?": "+esc(i.qty):""} · ${esc(i.date)}${isMgr()?` <a onclick="delInp('${i.id}')" style="cursor:pointer">✕</a>`:""}</span>`).join("")||'<span class="muted">কোনো ইনপুট সাপোর্ট নেই</span>'}</div>
     <div class="row"><select id="it_${b.id}">${opts(D.inputTypes,"","-- ইনপুট --")}</select><input id="iq_${b.id}" placeholder="পরিমাণ (যেমন ৫ কেজি)"><button style="flex:0" onclick="addInp('${b.id}')">যোগ</button></div></div>`}).join("")||'<div class="card muted">কোনো বেনিফিশিয়ারি নেই। আগে বেনিফিশিয়ারি ট্যাবে যোগ করুন।</div>';
 }
@@ -556,7 +683,7 @@ function report(){
   $("c").innerHTML=`<div class="card noprint"><div class="row">
   <div><label>থেকে</label><input type="date" id="ff" onchange="applyF()" value="${F.from||""}"></div>
   <div><label>পর্যন্ত</label><input type="date" id="ft" onchange="applyF()" value="${F.to||""}"></div>
-  <div><label>স্টাফ</label><select id="fs" onchange="applyF()"><option value="">সবাই</option>${myStaff().map(s=>`<option value="${s.id}" ${F.s===s.id?"selected":""}>${esc(s.name)}</option>`).join("")}</select></div>
+  <div><label>স্টাফ</label><select id="fs" onchange="applyF()"><option value="">সবাই</option>${visibleStaff().map(s=>`<option value="${s.id}" ${F.s===s.id?"selected":""}>${esc(s.name)}</option>`).join("")}</select></div>
   <div><label>কাজ</label><select id="fa" onchange="applyF()">${opts(ACTS,F.a,"সব")}</select></div>
   <div><label>স্ট্যাটাস</label><select id="fst" onchange="applyF()">${opts(["পরিকল্পিত","বাস্তবায়িত"],F.st,"সব")}</select></div>
   <div><label>এরিয়া</label><select id="far" onchange="applyF()">${opts(optsAllowed("areas",D.areas),F.ar,"সব")}</select></div><div><label>প্রজেক্ট</label><select id="fpj" onchange="applyF()">${opts(optsAllowed("projects",D.projects),F.pj,"সব")}</select></div>
@@ -583,12 +710,52 @@ function csv(){
   const rows=[["তারিখ","স্টাফ","এরিয়া (প্রজেক্ট)","কাজ","গ্রুপ","SED হাব","চর","বেনিফিশিয়ারি","স্ট্যাটাস","পরিকল্পনা","সম্পন্ন নোট"]].concat(filtered().map(m=>[m.date,sName(m.staffId),apTxt(m),j(m.act),j(m.group),j(m.hap),j(m.char),benTxt(m),m.status,m.plan,m.note])).map(r=>r.map(c=>tr(c)));
   dl(new Blob(["\ufeff"+rows.map(r=>r.map(q).join(",")).join("\n")],{type:"text/csv;charset=utf-8"}),"movement-report.csv");
 }
+function clearData(){D.accounts=[];D.people=[];D.moves=[];D.bens=[];D.inputs=[]}
+function stopData(){UNSUBS.forEach(f=>{try{f()}catch(e){}});UNSUBS=[];RDYN={};DATA_READY=false}
+function syncMe(){
+  const u=AUTHU;
+  if(!u){if(me){me=null;tab=""}return}
+  const em=(u.email||"").toLowerCase();
+  if(em===ADMIN_EMAIL){if(!me||me.role!=="admin"||me.uid!==u.uid){me={role:"admin",uid:u.uid,id:u.uid,email:em,name:"মেইন এডমিন"};tab=""}return}
+  if(!RDYN.acc)return;
+  const a=D.accounts.find(x=>x.id===u.uid);
+  if(!a){
+    if(me){me=null;tab=""}
+    LOGIN_OK=false;LOGIN_NOTE="আপনার একাউন্ট চালু নেই। এডমিনের সাথে যোগাযোগ করুন।";
+    auth.signOut();return;
+  }
+  const role=a.role==="sub"?"sub":"user";
+  if(!me||me.uid!==u.uid||me.role!==role){me={role,uid:u.uid,id:u.uid,email:em,name:a.name};tab=""}else me.name=a.name;
+}
+function afterData(){
+  const was=me?me.uid+"|"+me.role:"";
+  syncMe();
+  const now=me?me.uid+"|"+me.role:"";
+  if(was!==now||(!me&&LOGIN_NOTE))render();else refresh();
+}
+function listen(key,ref,fn){
+  const done=()=>{RDYN[key]=1;DATA_READY=Object.keys(RDYN).length>=6;chkReady();afterData()};
+  UNSUBS.push(ref.onSnapshot(x=>{fn(x);done()},err=>{console.warn(key,err.code);done()}));
+}
+function startData(){
+  stopData();
+  const arr=q=>q.docs.map(x=>x.data());
+  listen("cfg",db.collection("app").doc("config"),d=>{if(d.exists){const c=d.data();["groups","haps","chars","groupChar","hapChar","inputTypes","projects","areas"].forEach(k=>{if(c[k]!==undefined)D[k]=c[k]})}});
+  listen("acc",db.collection("accounts"),q=>{D.accounts=arr(q)});
+  listen("ppl",db.collection("people"),q=>{D.people=arr(q)});
+  listen("mv",db.collection("moves_v2"),q=>{D.moves=arr(q)});
+  listen("bn",db.collection("bens_v2"),q=>{D.bens=arr(q)});
+  listen("ip",db.collection("inputs_v2"),q=>{D.inputs=arr(q)});
+}
 if(useFB){
-  db.collection("app").doc("config").onSnapshot(d=>{READY=true;if(d.exists){const c=d.data();["groups","haps","chars","groupChar","hapChar","inputTypes","projects","areas","adminPass"].forEach(k=>{if(c[k]!==undefined)D[k]=c[k]})}refresh()});
-  db.collection("staff").onSnapshot(q=>{D.staff=q.docs.map(x=>x.data());refresh()});
-  db.collection("inputs").onSnapshot(q=>{D.inputs=q.docs.map(x=>x.data());refresh()});
-  db.collection("bens").onSnapshot(q=>{D.bens=q.docs.map(x=>x.data());refresh()});
-  db.collection("moves").onSnapshot(q=>{D.moves=q.docs.map(x=>x.data());refresh()});
+  auth.onAuthStateChanged(u=>{
+    AUTH_READY=true;
+    const was=AUTHU&&AUTHU.uid;
+    AUTHU=(u&&u.emailVerified)?u:null;
+    if(AUTHU){if(was!==AUTHU.uid)startData()}
+    else{stopData();clearData()}
+    chkReady();afterData();
+  });
 }
 new MutationObserver(ms=>{if(LANG!=="en")return;for(const m of ms){if(m.type==="characterData")trTxt(m.target);else m.addedNodes.forEach(trTree)}}).observe(document.body,{childList:true,subtree:true,characterData:true});
 document.documentElement.lang=LANG;if(LANG==="en")document.title="Staff Movement Monitoring - SED Sector";

@@ -210,7 +210,11 @@ const EN={
 "সম্পাদনা":"Edit","কোনো স্টাফ নেই":"No staff","স্টাফ মুছবেন? (তার মুভমেন্ট থাকবে)":"Delete staff? (their movements will remain)","আপনার এক্সেসে কোনো স্টাফ নেই":"No staff in your access",
 "কোনো স্টাফ যোগ করা হয়নি":"No staff added yet","স্টাফ, একাউন্ট ও সেটিংস":"Staff, Accounts & Settings","স্টাফ তালিকা, লগইন একাউন্ট ও ব্যাকআপ":"Staff list, login accounts & backup",
 "সেভ হয়নি":"Not saved","মোছা যায়নি":"Could not delete",
-"কল":"Call","স্টাফ ও একাউন্ট":"Staff & Accounts","স্টাফ তালিকা ও ইউজার একাউন্ট":"Staff list & user accounts","চর ও গ্রুপ":"Chars & Groups","চর ও গ্রুপের নাম যোগ":"Add char and group names","লোড হচ্ছে...":"Loading...","লোড হচ্ছে":"Loading",
+"কল":"Call","কাজের ধরন সম্পাদনা":"Edit Activity Type","কাজের ধরন যোগ করুন":"Add Activity Type","বিশেষ সুবিধা":"Special feature","সাধারণ কাজ":"General activity",
+"বেনিফিশিয়ারি ভিজিট (বেনিফিশিয়ারি বাছাই)":"Beneficiary visit (select beneficiaries)","ফলোআপ (ইনপুট পাওয়া বেনিফিশিয়ারি বাছাই)":"Follow-up (select beneficiaries who got inputs)","SED হাব ভিজিট (হাব বাছাই)":"SED hub visit (select hub)",
+"এটা বিশেষ কাজের ধরন। মুছলে ঐ সুবিধা বন্ধ হবে। মুছবেন?":"This is a special activity type. Deleting it will turn off that feature. Delete?","ডিফল্ট কাজের ধরন চালু করুন":"Enable default activity types",
+"এরিয়া, প্রজেক্ট ও কাজের ধরন":"Areas, Projects & Activity Types","কাজের এলাকা, প্রজেক্ট ও কাজের ধরন":"Work areas, projects and activity types",
+"চর, গ্রুপ, হাব ও কাজের ধরন":"Chars, Groups, Hubs & Activity Types","চর, গ্রুপ, হাব ও কাজের ধরনের তালিকা":"Lists of chars, groups, hubs and activity types","স্টাফ ও একাউন্ট":"Staff & Accounts","স্টাফ তালিকা ও ইউজার একাউন্ট":"Staff list & user accounts","চর ও গ্রুপ":"Chars & Groups","চর ও গ্রুপের নাম যোগ":"Add char and group names","লোড হচ্ছে...":"Loading...","লোড হচ্ছে":"Loading",
 "ইউজার / সাব এডমিন":"User / Sub Admin","মেইন এডমিন":"Main Admin","সাব এডমিন":"Sub Admin","ইউজার":"User","একাউন্ট":"Accounts",
 "একাউন্ট ও সেটিংস":"Accounts & Settings","সাব এডমিন, ইউজার ও ব্যাকআপ":"Sub admins, users & backup","আপনার ইউজার একাউন্ট ও এক্সেস":"Your user accounts & access",
 "একাউন্ট খুলুন":"Create Account","ইউজার একাউন্ট খুলুন":"Create User Account","একাউন্টের ধরন":"Account type",
@@ -244,9 +248,12 @@ function trTree(r){
   while(n=w.nextNode()){if(!/^(SCRIPT|STYLE)$/.test(n.parentNode.nodeName))L.push(n)}
   L.forEach(trTxt);
 }
-const ACTS=["ট্রেনিং","মিটিং","লেসন লার্নিং","বেনিফিশিয়ারি ভিজিট","ফলোআপ","SED হাব ভিজিট"];
+const DEFAULT_ACTS=[["ট্রেনিং",""],["মিটিং",""],["লেসন লার্নিং",""],["বেনিফিশিয়ারি ভিজিট","ben"],["ফলোআপ","follow"],["SED হাব ভিজিট","hub"]];
+const actNames=()=>D.acts&&D.acts.length?D.acts:DEFAULT_ACTS.map(x=>x[0]);
+const kindOf=n=>{if(D.acts&&D.acts.length)return D.actKind[n]||"";const d=DEFAULT_ACTS.find(x=>x[0]===n);return d?d[1]:""};
+const hasKind=(a,k)=>toArr(a).some(n=>kindOf(n)===k);
 const KEY="staffMonitorV1";
-let D={accounts:[],people:[],masters:[],groups:[],haps:[],chars:[],moves:[],projects:["নারিস","কাদরি"],areas:["চিলমারী","গাইবান্দা"],bens:[],inputs:[],inputTypes:["বীজ","সার","ভার্মি কম্পোস্ট"],groupChar:{},hapChar:{}};
+let D={accounts:[],people:[],masters:[],acts:[],actKind:{},groups:[],haps:[],chars:[],moves:[],projects:["নারিস","কাদরি"],areas:["চিলমারী","গাইবান্দা"],bens:[],inputs:[],inputTypes:["বীজ","সার","ভার্মি কম্পোস্ট"],groupChar:{},hapChar:{}};
 if(!useFB){try{const s=localStorage.getItem(KEY);if(s)D=Object.assign(D,JSON.parse(s))}catch(e){}}
 const saveCfg=()=>db.collection("app").doc("config").set({inputTypes:D.inputTypes,projects:D.projects,areas:D.areas}).catch(e=>alert("সেভ হয়নি: "+(e.code||e.message)));
 const TYPE={chars:"char",groups:"group",haps:"hap"};
@@ -256,6 +263,7 @@ function rebuildMasters(){
   D.groups=ms.filter(m=>m.type==="group").map(m=>m.name);
   D.haps=ms.filter(m=>m.type==="hap").map(m=>m.name);
   D.groupChar={};D.hapChar={};
+  const am=ms.filter(m=>m.type==="act");D.acts=am.map(m=>m.name);D.actKind={};am.forEach(m=>{D.actKind[m.name]=m.kind||""});
   ms.forEach(m=>{if(m.type==="group"&&m.char)D.groupChar[m.name]=m.char;if(m.type==="hap"&&m.char)D.hapChar[m.name]=m.char});
 }
 function legacyToMasters(o){
@@ -275,7 +283,7 @@ function refresh(){
   if(!me)return;
   if(tab==="ben"){if($("bl"))benList();return}
   if(tab==="inp"){const a=document.activeElement;if($("il")&&!(a&&$("il").contains(a)))inputList();return}
-  if(tab==="plan"||tab==="move"||((tab==="accounts"&&EDITING)||(tab==="people"&&EDITP)))return;
+  if(tab==="plan"||tab==="move"||((tab==="accounts"&&EDITING)||(tab==="people"&&EDITP)||(tab==="acts"&&EDITA)))return;
   const a=document.activeElement;if(a&&/INPUT|TEXTAREA|SELECT/.test(a.tagName))return;
   render();
 }
@@ -410,17 +418,17 @@ const okBen=b=>{const l=allow("chars");return !l||(!!benChar(b)&&l.includes(benC
 const roleTxt=r=>r==="sub"?"সাব এডমিন":"ইউজার";
 const stNames=ids=>toArr(ids).map(id=>(D.people.find(p=>p.id===id)||{}).name).filter(Boolean).join(", ");
 const accTxt=a=>{a=a||{};const p=[["স্টাফ","staff"],["এরিয়া","areas"],["প্রজেক্ট","projects"],["চর","chars"]].filter(([l,k])=>a[k]&&a[k].length).map(([l,k])=>tr(l)+": "+(k==="staff"?stNames(a[k]):a[k].map(tr).join(", ")));return p.join(" · ")||tr("সব এক্সেস")};
-const TL={move:["➕","মুভমেন্ট"],report:["📊","রিপোর্ট"],ben:["🧑‍🌾","বেনিফিশিয়ারি"],inp:["🌱","ইনপুট সাপোর্ট"],areas:["🗺","এরিয়া"],projects:["📁","প্রজেক্ট"],groups:["👥","গ্রুপ"],haps:["📍","SED হাব"],chars:["🏝","চর"],accounts:["👤","একাউন্ট"],people:["👷","স্টাফ"],set:["⚙️","সেটিংস"],plan:["➕","নতুন পরিকল্পনা"],my:["📋","আমার কাজ"]};
+const TL={move:["➕","মুভমেন্ট"],report:["📊","রিপোর্ট"],ben:["🧑‍🌾","বেনিফিশিয়ারি"],inp:["🌱","ইনপুট সাপোর্ট"],areas:["🗺","এরিয়া"],projects:["📁","প্রজেক্ট"],groups:["👥","গ্রুপ"],haps:["📍","SED হাব"],chars:["🏝","চর"],accounts:["👤","একাউন্ট"],people:["👷","স্টাফ"],acts:["📝","কাজের ধরন"],set:["⚙️","সেটিংস"],plan:["➕","নতুন পরিকল্পনা"],my:["📋","আমার কাজ"]};
 const MENU=()=>me.role==="admin"?[
  {t:"মুভমেন্ট ও রিপোর্ট",s:"পরিকল্পনা, বাস্তবায়ন ও রিপোর্ট",c:"indigo",i:"🚶",k:["move","report"]},
  {t:"বেনিফিশিয়ারি ও ইনপুট",s:"বেনিফিশিয়ারি তালিকা ও ইনপুট সাপোর্ট",c:"teal",i:"🌱",k:["ben","inp"]},
- {t:"এরিয়া ও প্রজেক্ট",s:"কাজের এলাকা ও প্রজেক্টের নাম",c:"orange",i:"🗺",k:["areas","projects"]},
+ {t:"এরিয়া, প্রজেক্ট ও কাজের ধরন",s:"কাজের এলাকা, প্রজেক্ট ও কাজের ধরন",c:"orange",i:"🗺",k:["areas","projects","acts"]},
  {t:"চর, গ্রুপ ও SED হাব",s:"চর, গ্রুপ ও হাবের তালিকা",c:"blue",i:"🏝",k:["chars","groups","haps"]},
  {t:"স্টাফ, একাউন্ট ও সেটিংস",s:"স্টাফ তালিকা, লগইন একাউন্ট ও ব্যাকআপ",c:"green",i:"👷",k:["people","accounts","set"]}
 ]:me.role==="sub"?[
  {t:"মুভমেন্ট ও রিপোর্ট",s:"পরিকল্পনা, বাস্তবায়ন ও রিপোর্ট",c:"indigo",i:"🚶",k:["move","my","report"]},
  {t:"বেনিফিশিয়ারি ও ইনপুট",s:"বেনিফিশিয়ারি তালিকা ও ইনপুট সাপোর্ট",c:"teal",i:"🌱",k:["ben","inp"]},
- {t:"চর, গ্রুপ ও SED হাব",s:"চর, গ্রুপ ও হাবের তালিকা",c:"blue",i:"🏝",k:["chars","groups","haps"]},
+ {t:"চর, গ্রুপ, হাব ও কাজের ধরন",s:"চর, গ্রুপ, হাব ও কাজের ধরনের তালিকা",c:"blue",i:"🏝",k:["chars","groups","haps","acts"]},
  {t:"স্টাফ ও একাউন্ট",s:"স্টাফ তালিকা ও ইউজার একাউন্ট",c:"green",i:"👷",k:["people","accounts"]}
 ]:[
  {t:"আমার মুভমেন্ট",s:"পরিকল্পনা, বাস্তবায়ন ও রিপোর্ট",c:"indigo",i:"🚶",k:["plan","my","report"]},
@@ -428,9 +436,9 @@ const MENU=()=>me.role==="admin"?[
  {t:"চর ও গ্রুপ",s:"চর ও গ্রুপের নাম যোগ",c:"blue",i:"🏝",k:["chars","groups"]}
 ];
 const ring=()=>`<div class="ring">${[0,1,2,3,4,5,6,7].map(i=>`<span style="--i:${i}">F</span>`).join("")}</div>`;
-const go=k=>{tab=k;EDITING=null;render()};
+const go=k=>{tab=k;EDITING=null;EDITP=null;EDITA=null;render()};
 const LO='<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg>';
-const logout=()=>{EDITING=null;EDITP=null;if(useFB){auth.signOut()}else{me=null;tab="";render()}};
+const logout=()=>{EDITING=null;EDITP=null;EDITA=null;if(useFB){auth.signOut()}else{me=null;tab="";render()}};
 const ascii=t=>String(t||"").replace(/[০-৯]/g,d=>"০১২৩৪৫৬৭৮৯".indexOf(d));
 const callBtn=b=>{const n=ascii(b.mobile).replace(/[^\d+]/g,"");return n?`<a class="call" href="tel:${n}">📞 ${tr("কল")}</a>`:""};
 const syncTxt=()=>useFB?(navigator.onLine?"☁️✓ "+tr("আপ টু ডেট"):"📴 "+tr("অফলাইন (নেট এলে জমা হবে)")):"💾 "+tr("লোকাল ডাটা");
@@ -462,6 +470,7 @@ function staffView(){
   else if(tab==="report")report();
   else if(tab==="accounts")accountsAdm();
   else if(tab==="people")peopleAdm();
+  else if(tab==="acts")actsAdm();
   else if(tab==="chars"||tab==="groups"||tab==="haps")listAdm(tab);
   else myList();
 }
@@ -496,12 +505,11 @@ function addPlan(){
     for(const gi of gs){
       const k=c+"_"+gi,a=pick("a_"+k);
       if(!a.length)return alert(tr(cn||"চর ছাড়া")+" / "+tr(gi==="x"?"গ্রুপ ছাড়া":D.groups[gi])+" "+tr("এর কাজের ধরন সিলেক্ট করুন"));
-      out.push({id:uid(),staffId:$("ps").value,by:me.uid,date:$("pd").value,ap:ap,act:a,group:gi==="x"?[]:[D.groups[gi]],hap:a.includes(HUBV)?pick("h_"+k):[],bens:a.includes(BENV)?pick("b_"+k):[],fol:a.includes("ফলোআপ")?pick("f_"+k):[],char:cn?[cn]:[],plan:$("pn").value,status:"পরিকল্পিত",note:""});
+      out.push({id:uid(),staffId:$("ps").value,by:me.uid,date:$("pd").value,ap:ap,act:a,group:gi==="x"?[]:[D.groups[gi]],hap:hasKind(a,"hub")?pick("h_"+k):[],bens:hasKind(a,"ben")?pick("b_"+k):[],fol:hasKind(a,"follow")?pick("f_"+k):[],char:cn?[cn]:[],plan:$("pn").value,status:"পরিকল্পিত",note:""});
     }
   }
   D.moves.push(...out);out.forEach(saveMove);tab=isMgr()?"report":"my";render();alert("মুভমেন্ট সেভ হয়েছে");
 }
-const HUBV="SED হাব ভিজিট";
 const chk2=(n,arr,on,oc)=>arr.length?`<div class="ck">${arr.map(x=>`<label><input type="checkbox" name="${n}" value="${esc(x)}" ${on.includes(x)?"checked":""} ${oc||""}>${esc(x)}</label>`).join("")}</div>`:'<span class="muted">এডমিন এখনো যোগ করেনি</span>';
 let GS={},GG={};
 function groupsFor(c){
@@ -518,12 +526,12 @@ function rebuild(){
     <label>গ্রুপ সিলেক্ট করুন (একাধিক)</label><div class="ck">${groupsFor(c).map(([gi,gn])=>`<label><input type="checkbox" name="g_${c}" value="${gi}" ${sel.includes(String(gi))?"checked":""} onchange="rebuild()">${esc(gn)}</label>`).join("")}</div>
     ${sel.map(gi=>{const k=c+"_"+gi,g=GS[k]||{a:[],h:[],b:[],f:[]},gn=gi==="x"?"গ্রুপ ছাড়া":D.groups[gi];
       return `<div class="sblk" data-k="${k}" style="background:#fff;border:1px solid #d8e4d5;border-radius:8px;padding:8px;margin-top:8px"><b>🔹 ${esc(gn)}</b>
-      <label>কাজের ধরন</label>${chk2("a_"+k,ACTS,g.a,`onchange="hubToggle('${k}')"`)}
-      <div id="hb_${k}" style="display:${g.a.includes(HUBV)?"block":"none"}"><label>SED হাব</label>${chk2("h_"+k,hapsFor(c),g.h)}</div>
-      <div id="bb_${k}" style="display:${g.a.includes(BENV)?"block":"none"}"><label>বেনিফিশিয়ারি (ভিজিট)</label>${chkId("b_"+k,benFor(c,gi).map(b=>[b.id,b.name]),g.b,"এই গ্রুপে কোনো বেনিফিশিয়ারি যোগ করা হয়নি")}</div>
-      <div id="fb_${k}" style="display:${g.a.includes("ফলোআপ")?"block":"none"}"><label>ফলোআপ (ইনপুট সাপোর্ট পাওয়া বেনিফিশিয়ারি)</label>${chkId("f_"+k,benFor(c,gi).filter(b=>D.inputs.some(i=>i.benId===b.id)).map(b=>[b.id,b.name+" — "+[...new Set(D.inputs.filter(i=>i.benId===b.id).map(i=>tr(i.type)))].join(", ")]),g.f,"এই গ্রুপে কেউ ইনপুট সাপোর্ট পায়নি")}</div></div>`}).join("")}</div>`}).join("");
+      <label>কাজের ধরন</label>${chk2("a_"+k,actNames(),g.a,`onchange="hubToggle('${k}')"`)}
+      <div id="hb_${k}" style="display:${hasKind(g.a,"hub")?"block":"none"}"><label>SED হাব</label>${chk2("h_"+k,hapsFor(c),g.h)}</div>
+      <div id="bb_${k}" style="display:${hasKind(g.a,"ben")?"block":"none"}"><label>বেনিফিশিয়ারি (ভিজিট)</label>${chkId("b_"+k,benFor(c,gi).map(b=>[b.id,b.name]),g.b,"এই গ্রুপে কোনো বেনিফিশিয়ারি যোগ করা হয়নি")}</div>
+      <div id="fb_${k}" style="display:${hasKind(g.a,"follow")?"block":"none"}"><label>ফলোআপ (ইনপুট সাপোর্ট পাওয়া বেনিফিশিয়ারি)</label>${chkId("f_"+k,benFor(c,gi).filter(b=>D.inputs.some(i=>i.benId===b.id)).map(b=>[b.id,b.name+" — "+[...new Set(D.inputs.filter(i=>i.benId===b.id).map(i=>tr(i.type)))].join(", ")]),g.f,"এই গ্রুপে কেউ ইনপুট সাপোর্ট পায়নি")}</div></div>`}).join("")}</div>`}).join("");
 }
-function hubToggle(k){const a=pick("a_"+k),t=(id,on)=>{$(id+k).style.display=on?"block":"none"};t("hb_",a.includes(HUBV));t("bb_",a.includes(BENV));t("fb_",a.includes("ফলোআপ"))}
+function hubToggle(k){const a=pick("a_"+k),t=(id,on)=>{$(id+k).style.display=on?"block":"none"};t("hb_",hasKind(a,"hub"));t("bb_",hasKind(a,"ben"));t("fb_",hasKind(a,"follow"))}
 function myList(){
   const l=D.moves.filter(moveInScope).sort((a,b)=>b.date.localeCompare(a.date));
   $("c").innerHTML=l.length?l.map(m=>`<div class="card"><div class="item" style="border:0;padding:0"><b>${esc(j(m.act))}</b><span class="badge ${m.status==="বাস্তবায়িত"?"d":"p"}">${m.status}</span></div>
@@ -544,7 +552,7 @@ function delMove(id){if(confirm("মুছে ফেলবেন?")){D.moves=D.m
 function adminView(){
   if(tab==="home")return homeView();
   shell();
-  if(tab==="move")planForm();else if(tab==="ben")benView();else if(tab==="inp")inpView();else if(tab==="report")report();else if(tab==="accounts")accountsAdm();else if(tab==="people")peopleAdm();else if(tab==="set")settings();else listAdm(tab);
+  if(tab==="move")planForm();else if(tab==="ben")benView();else if(tab==="inp")inpView();else if(tab==="report")report();else if(tab==="accounts")accountsAdm();else if(tab==="people")peopleAdm();else if(tab==="acts")actsAdm();else if(tab==="set")settings();else listAdm(tab);
 }
 const MP=k=>k==="groups"?D.groupChar:k==="haps"?D.hapChar:null;
 const addName=k=>LANG==="en"?"Add "+tr(LT[k])+" name":LT[k]+"-এর নাম যোগ করুন";
@@ -577,7 +585,7 @@ function delItem(k,i){
   const m=D.masters.find(x=>x.type===TYPE[k]&&x.name===nm);if(!m)return;
   D.masters=D.masters.filter(x=>x.id!==m.id);rebuildMasters();fsDel("masters",m.id);render();
 }
-let EDITING=null,EDITP=null;
+let EDITING=null,EDITP=null,EDITA=null;
 const stOpts=()=>visibleStaff().map(p=>[p.id,p.name+(p.desig?" — "+p.desig:"")]);
 function accountsAdm(){
   if(EDITING)return accEditView();
@@ -669,6 +677,31 @@ function delPerson(id){
   if(me.role!=="admin"&&x.createdBy!==me.uid)return;
   if(confirm("স্টাফ মুছবেন? (তার মুভমেন্ট থাকবে)")){D.people=D.people.filter(y=>y.id!==id);delPersonDb(id);render()}
 }
+const KINDS=[["","সাধারণ কাজ"],["ben","বেনিফিশিয়ারি ভিজিট (বেনিফিশিয়ারি বাছাই)"],["follow","ফলোআপ (ইনপুট পাওয়া বেনিফিশিয়ারি বাছাই)"],["hub","SED হাব ভিজিট (হাব বাছাই)"]];
+const kindTxt=k=>(KINDS.find(x=>x[0]===(k||""))||KINDS[0])[1];
+function actsAdm(){
+  const e=EDITA?D.masters.find(x=>x.id===EDITA):null;
+  const list=D.masters.filter(m=>m.type==="act").sort((a,b)=>(a.createdAt||0)-(b.createdAt||0));
+  $("c").innerHTML=`<div class="card"><h3>${e?"কাজের ধরন সম্পাদনা":"কাজের ধরন যোগ করুন"}</h3>
+  <label>নাম</label><input id="an1" value="${esc(e?e.name:"")}">
+  <label>বিশেষ সুবিধা</label><select id="ak">${KINDS.map(([v,t])=>`<option value="${v}" ${e&&(e.kind||"")===v?"selected":""}>${t}</option>`).join("")}</select>
+  <br><button onclick="saveAct()">${e?"সেভ":"যোগ করুন"}</button>${e?` <button class="sec" onclick="EDITA=null;render()">বাতিল</button>`:""}</div>
+  <div class="card">${list.length?list.map(x=>`<div class="item"><div><b>${esc(x.name)}</b><div class="muted">${kindTxt(x.kind)}</div></div><div class="acts"><button class="sm sec" onclick="EDITA='${x.id}';render()">সম্পাদনা</button><button class="sm red" onclick="delAct('${x.id}')">মুছুন</button></div></div>`).join(""):`<span class="muted">কিছু যোগ করা হয়নি</span><br><br><button onclick="seedActs();render()">ডিফল্ট কাজের ধরন চালু করুন</button>`}</div>`;
+}
+function renameAct(a,b){D.moves.forEach(m=>{if(toArr(m.act).includes(a)){m.act=toArr(m.act).map(x=>x===a?b:x);saveMove(m)}})}
+function saveAct(){
+  const n=$("an1").value.trim(),k=$("ak").value;if(!n)return alert("নাম লিখুন");
+  const e=EDITA?D.masters.find(x=>x.id===EDITA):null;
+  if(D.acts.includes(n)&&(!e||e.name!==n))return alert("আগে থেকেই আছে");
+  if(e){const old=e.name;e.name=n;e.kind=k;fsSave("masters",e);if(old!==n)renameAct(old,n)}
+  else{const m={id:uid(),type:"act",name:n,kind:k,char:"",createdBy:me.uid,createdAt:Date.now()};D.masters.push(m);fsSave("masters",m)}
+  rebuildMasters();EDITA=null;render();
+}
+function delAct(id){
+  const x=D.masters.find(m=>m.id===id);if(!x)return;
+  if(!confirm(x.kind?"এটা বিশেষ কাজের ধরন। মুছলে ঐ সুবিধা বন্ধ হবে। মুছবেন?":"মুছবেন?"))return;
+  D.masters=D.masters.filter(m=>m.id!==id);rebuildMasters();fsDel("masters",id);render();
+}
 function settings(){
   $("c").innerHTML=`<div class="card"><h3>আমার পাসওয়ার্ড</h3><button onclick="resetMail(me.email)">পাসওয়ার্ড রিসেট ইমেইল পাঠান</button></div>
   <div class="card"><h3>ব্যাকআপ</h3><button class="sec" onclick="backup()">ডাটা ডাউনলোড (JSON)</button> <button class="sec" onclick="$('rf').click()">ডাটা রিস্টোর</button><input type="file" id="rf" class="hide" accept=".json" onchange="restore(this)"></div>`;
@@ -678,7 +711,6 @@ function restore(i){const r=new FileReader();r.onload=()=>{try{const o=JSON.pars
 function dl(b,n){const a=document.createElement("a");a.href=URL.createObjectURL(b);a.download=n;a.click()}
 
 /* ---------- Beneficiary ---------- */
-const BENV="বেনিফিশিয়ারি ভিজিট";
 const benChar=b=>b.char||D.groupChar[b.group]||"";
 const cOpts=ph=>`<option value="">${ph}</option>`+optsAllowed("chars",D.chars).map(c=>`<option value="${esc(c)}">${esc(c)}</option>`).join("");
 const gOpts=(cn,ph)=>`<option value="">${ph}</option>`+D.groups.filter(g=>{const m=D.groupChar[g];if(cn)return !m||m===cn;const l=allow("chars");return !l||!m||l.includes(m)}).map(g=>`<option value="${esc(g)}">${esc(g)}${D.groupChar[g]&&!cn?" ("+tr("চর")+": "+esc(tr(D.groupChar[g]))+")":""}</option>`).join("");
@@ -746,7 +778,7 @@ function report(){
   <div><label>থেকে</label><input type="date" id="ff" onchange="applyF()" value="${F.from||""}"></div>
   <div><label>পর্যন্ত</label><input type="date" id="ft" onchange="applyF()" value="${F.to||""}"></div>
   <div><label>স্টাফ</label><select id="fs" onchange="applyF()"><option value="">সবাই</option>${visibleStaff().map(s=>`<option value="${s.id}" ${F.s===s.id?"selected":""}>${esc(s.name)}</option>`).join("")}</select></div>
-  <div><label>কাজ</label><select id="fa" onchange="applyF()">${opts(ACTS,F.a,"সব")}</select></div>
+  <div><label>কাজ</label><select id="fa" onchange="applyF()">${opts(actNames(),F.a,"সব")}</select></div>
   <div><label>স্ট্যাটাস</label><select id="fst" onchange="applyF()">${opts(["পরিকল্পিত","বাস্তবায়িত"],F.st,"সব")}</select></div>
   <div><label>এরিয়া</label><select id="far" onchange="applyF()">${opts(optsAllowed("areas",D.areas),F.ar,"সব")}</select></div><div><label>প্রজেক্ট</label><select id="fpj" onchange="applyF()">${opts(optsAllowed("projects",D.projects),F.pj,"সব")}</select></div>
   <div><label>চর</label><select id="fch" onchange="applyF()">${opts(optsAllowed("chars",D.chars),F.ch,"সব")}</select></div><div><label>গ্রুপ</label><select id="fgr" onchange="applyF()">${opts(D.groups,F.gr,"সব")}</select></div><div><label>SED হাব</label><select id="fhb" onchange="applyF()">${opts(D.haps,F.hb,"সব")}</select></div></div><br>
@@ -791,13 +823,24 @@ function syncMe(){
 }
 function afterData(){
   const was=me?me.uid+"|"+me.role:"";
-  syncMe();maybeMigrate();
+  syncMe();maybeMigrate();maybeSeed();
   const now=me?me.uid+"|"+me.role:"";
   if(was!==now||(!me&&LOGIN_NOTE))render();else refresh();
 }
 function listen(key,ref,fn){
   const done=()=>{RDYN[key]=1;DATA_READY=Object.keys(RDYN).length>=7;chkReady();afterData()};
   UNSUBS.push(ref.onSnapshot(x=>{fn(x);done()},err=>{console.warn(key,err.code);done()}));
+}
+function seedActs(){
+  if(D.masters.some(m=>m.type==="act"))return;
+  let t=Date.now();
+  DEFAULT_ACTS.map(([n,k])=>({id:uid(),type:"act",name:n,kind:k,char:"",createdBy:"admin",createdAt:t++})).forEach(m=>{D.masters.push(m);fsSave("masters",m)});
+  rebuildMasters();
+}
+let SEEDED=false;
+function maybeSeed(){
+  if(SEEDED||!useFB||!me||me.role!=="admin"||!RDYN.ms||D._msFromCache)return;
+  SEEDED=true;seedActs();
 }
 let MIGRATED=false;
 function maybeMigrate(){
@@ -806,14 +849,14 @@ function maybeMigrate(){
   const A=v=>Array.isArray(v)?v:[],has=A(L.chars).length||A(L.groups).length||A(L.haps).length;
   if(!has&&L.groupChar===undefined&&L.hapChar===undefined)return;
   MIGRATED=true;
-  if(!D.masters.length&&has){const docs=legacyToMasters(L);docs.forEach(m=>{D.masters.push(m);fsSave("masters",m)});rebuildMasters()}
+  if(!D.masters.some(m=>m.type!=="act")&&has){const docs=legacyToMasters(L);docs.forEach(m=>{D.masters.push(m);fsSave("masters",m)});rebuildMasters()}
   D._legacy=null;saveCfg();
 }
 function startData(){
   stopData();
   const arr=q=>q.docs.map(x=>x.data());
   listen("cfg",db.collection("app").doc("config"),d=>{if(d.exists){const c=d.data();["inputTypes","projects","areas"].forEach(k=>{if(c[k]!==undefined)D[k]=c[k]});D._legacy={chars:c.chars,groups:c.groups,haps:c.haps,groupChar:c.groupChar,hapChar:c.hapChar}}else D._legacy=null});
-  listen("ms",db.collection("masters"),q=>{D.masters=arr(q);rebuildMasters()});
+  listen("ms",db.collection("masters"),q=>{D.masters=arr(q);D._msFromCache=!!(q.metadata&&q.metadata.fromCache);rebuildMasters()});
   listen("acc",db.collection("accounts"),q=>{D.accounts=arr(q)});
   listen("ppl",db.collection("people"),q=>{D.people=arr(q)});
   listen("mv",db.collection("moves_v2"),q=>{D.moves=arr(q)});
@@ -845,7 +888,7 @@ trTree(document.body);
     if(v>=100){clearInterval(iv);setTimeout(()=>{sp.style.opacity=0;setTimeout(()=>sp.remove(),600)},250)}
   },50);
 })();
-if(!useFB){if(!D.masters.length)D.masters=legacyToMasters(D);rebuildMasters()}
+if(!useFB){if(!D.masters.some(m=>m.type!=="act"))D.masters=D.masters.concat(legacyToMasters(D));if(!D.masters.some(m=>m.type==="act"))seedActs();rebuildMasters()}
 if("serviceWorker" in navigator&&location.protocol==="https:"){window.addEventListener("load",()=>navigator.serviceWorker.register("sw.js").catch(()=>{}))}
 window.addEventListener("online",setSync);window.addEventListener("offline",setSync);
 render();
